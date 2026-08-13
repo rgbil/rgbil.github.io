@@ -72,48 +72,53 @@
     document.body.appendChild(ghost);
     heroLogo.style.opacity = "0"; /* the ghost is what you see from now on */
 
-    var hx = 0, hy = 0, hw = 1, k = 1, nx = 0, ny = 0;
+    /* the flight is described centre to centre: the mark never chases the page up,
+       it simply crosses from where the hero holds it to where the nav holds it */
+    var hcx = 0, hcy = 0, hw = 1, hh = 1, k = 1, ncx = 0, ncy = 0;
 
     function measure() {
       var h = heroLogo.getBoundingClientRect();
-      hx = h.left;
-      hy = h.top + scroller.scrollTop; /* where it sits with the hero at rest */
       hw = h.width || 1;
+      hh = h.height || 1;
+      hcx = h.left + hw / 2;
+      hcy = h.top + scroller.scrollTop + hh / 2; /* where it rests on the hero */
       ghost.style.width = hw + "px";
-      ghost.style.height = h.height + "px";
+      ghost.style.height = hh + "px";
 
       navLogo.classList.add("is-measuring");
       var n = navLogo.getBoundingClientRect();
       navLogo.classList.remove("is-measuring");
-      nx = n.left;
-      ny = n.top;
+      ncx = n.left + n.width / 2;
+      ncy = n.top + n.height / 2;
       k = (n.width || 1) / hw;
     }
 
-    function smoothstep(t) { return t * t * (3 - 2 * t); }
+    /* position leaves and lands softly; size drops away early, so the mark reads as
+       receding into the distance before it docks, instead of sliding at one rate */
+    function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
     var HANDOVER = 0.88; /* the last stretch, where both marks coincide */
 
     function paint() {
       var vh = scroller.clientHeight || 1;
-      var y = scroller.scrollTop;
-      var p = Math.min(1, Math.max(0, y / vh));
-      var e = smoothstep(p);
+      var p = Math.min(1, Math.max(0, scroller.scrollTop / vh));
+      var pos = easeInOut(p);
+      var s = 1 + easeOut(p) * (k - 1);
 
-      /* the mark's untransformed position drifts up with the page; interpolate from
-         wherever that is towards the fixed nav slot, so it lands exactly on it */
-      var restY = hy - y;
-      var tx = hx + e * (nx - hx);
-      var ty = restY + e * (ny - restY);
-      var s = 1 + e * (k - 1);
-      var tilt = e * (1 - e) * 4 * 9; /* peaks mid-flight, flat at both ends */
+      var cx = hcx + pos * (ncx - hcx);
+      var cy = hcy + pos * (ncy - hcy);
+      /* the box is placed so its centre lands on the path; scale and tilt pivot there */
+      var tx = cx - hw / 2;
+      var ty = cy - hh / 2;
+      var tilt = p * (1 - p) * 4 * 8; /* peaks mid-flight, flat at both ends */
 
       ghost.style.transform =
         "translate3d(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px,0) " +
         "perspective(900px) rotateX(" + tilt.toFixed(2) + "deg) " +
         "scale(" + s.toFixed(4) + ")";
 
-      var hand = e <= HANDOVER ? 0 : (e - HANDOVER) / (1 - HANDOVER);
+      var hand = pos <= HANDOVER ? 0 : (pos - HANDOVER) / (1 - HANDOVER);
       ghost.style.opacity = 1 - hand;
       navLogo.style.opacity = hand;
       navLogo.classList.toggle("is-in", hand > 0.9);

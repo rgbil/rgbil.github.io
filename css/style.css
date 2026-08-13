@@ -131,7 +131,7 @@ img { display: block; max-width: 100%; }
   top: 0;
   left: 0;
   z-index: 60;
-  transform-origin: top left;
+  transform-origin: center center; /* the flight is described by the mark's centre */
   pointer-events: none;
   will-change: transform, opacity;
   backface-visibility: hidden;
