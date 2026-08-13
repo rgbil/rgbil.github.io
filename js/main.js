@@ -40,11 +40,12 @@
     });
   }
 
-  /* ---------- section glide: we own the travel, not the browser's snap ----------
-     Native snap covers the distance in ~200ms on a flat curve, which reads as a cut
-     and leaves no time for the parallax layers to be seen. Here a wheel notch, a key
-     or an in-page link hands the scroll to one long eased animation instead. Touch is
-     left alone: native momentum already feels right and hijacking it does not. */
+  /* ---------- section travel ----------
+     Two different jobs. A click on an arrow or a nav link is a deliberate jump, so it
+     gets the long eased glide. Plain scrolling stays the user's own: native snap is
+     switched off so nothing is yanked mid-gesture and the parallax layers track the
+     wheel directly; once the gesture stops, a short glide settles onto the nearest
+     screen instead of the browser's hard snap. */
   function wireSectionGlide() {
     var main = document.querySelector(".snap");
     if (!main) return;
@@ -53,9 +54,12 @@
     var sections = Array.prototype.slice.call(main.children);
     if (sections.length < 2) return;
 
+    /* ours now: the CSS rule stays as the no-JS fallback */
+    main.style.scrollSnapType = "none";
+
     var animating = false;
-    var settledAt = 0;
     var raf = 0;
+    var idle = 0;
 
     function vh() { return main.clientHeight || 1; }
 
@@ -72,34 +76,59 @@
       return 0;
     }
 
-    function glideTo(i) {
-      i = Math.max(0, Math.min(sections.length - 1, i));
+    function glideY(to, dur) {
       var from = main.scrollTop;
-      var to = sections[i].offsetTop;
       var dist = to - from;
       if (Math.abs(dist) < 2) return;
 
-      /* one screen lands at ~950ms; longer jumps stretch, but not without limit */
-      var screens = Math.abs(dist) / vh();
-      var dur = Math.min(1500, 700 + screens * 260);
-
       cancelAnimationFrame(raf);
       animating = true;
-      /* the browser would fight our writes while snap is armed */
-      main.style.scrollSnapType = "none";
 
       var t0 = performance.now();
       raf = requestAnimationFrame(function step(now) {
         var t = Math.min(1, (now - t0) / dur);
         main.scrollTop = from + dist * ease(t);
-        if (t < 1) {
-          raf = requestAnimationFrame(step);
-        } else {
-          main.style.scrollSnapType = "";
-          animating = false;
-          settledAt = Date.now();
+        if (t < 1) raf = requestAnimationFrame(step);
+        else animating = false;
+      });
+    }
+
+    function glideTo(i) {
+      i = Math.max(0, Math.min(sections.length - 1, i));
+      var dist = Math.abs(sections[i].offsetTop - main.scrollTop);
+      /* one screen lands at ~950ms; longer jumps stretch, but not without limit */
+      glideY(sections[i].offsetTop, Math.min(1500, 700 + (dist / vh()) * 260));
+    }
+
+    /* every position a screen is allowed to come to rest at */
+    function restPoints() {
+      var pts = [];
+      sections.forEach(function (sec) {
+        pts.push(sec.offsetTop);
+        /* a tall screen may also rest with its foot on the viewport */
+        if (sec.offsetHeight > vh() + 4) {
+          pts.push(sec.offsetTop + sec.offsetHeight - vh());
         }
       });
+      return pts;
+    }
+
+    /* called once the gesture has stopped: ease onto the nearest rest point */
+    function settle() {
+      if (animating) return;
+      var y = main.scrollTop;
+      var max = main.scrollHeight - vh();
+      if (y <= 1 || y >= max - 1) return;
+
+      var best = null, bestD = Infinity;
+      restPoints().forEach(function (pt) {
+        var d = Math.abs(pt - y);
+        if (d < bestD) { bestD = d; best = pt; }
+      });
+      /* more than half a screen away means the reader is mid-section: leave them be */
+      if (best === null || bestD < 2 || bestD > vh() * 0.5) return;
+
+      glideY(best, Math.min(620, 280 + (bestD / vh()) * 520));
     }
 
     /* a section taller than the viewport keeps its own scroll until an edge is hit */
@@ -109,17 +138,25 @@
       return down ? top + vh() >= sec.offsetHeight - 2 : top <= 2;
     }
 
-    main.addEventListener("wheel", function (e) {
-      if (e.ctrlKey || Math.abs(e.deltaY) < 4) return;
-      var down = e.deltaY > 0;
-      var i = indexNow();
-      if (!animating && !atEdge(sections[i], down)) return; /* native scroll inside */
+    /* the wheel and the finger are never intercepted; we only take over once the
+       scroll has been still for a moment, which is also after touch momentum ends */
+    main.addEventListener("scroll", function () {
+      if (animating) return;
+      clearTimeout(idle);
+      idle = setTimeout(settle, 140);
+    }, { passive: true });
 
-      e.preventDefault();
-      /* swallow the tail of trackpad momentum instead of firing a second jump */
-      if (animating || Date.now() - settledAt < 260) return;
-      glideTo(i + (down ? 1 : -1));
-    }, { passive: false });
+    /* a drag on the scrollbar or a wheel mid-glide is the user overriding us */
+    main.addEventListener("wheel", function () {
+      if (!animating) return;
+      cancelAnimationFrame(raf);
+      animating = false;
+    }, { passive: true });
+    main.addEventListener("touchstart", function () {
+      if (!animating) return;
+      cancelAnimationFrame(raf);
+      animating = false;
+    }, { passive: true });
 
     var KEYS = {
       ArrowDown: 1, PageDown: 1, " ": 1, Spacebar: 1,
