@@ -9,6 +9,8 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --pad-x: clamp(44px, 8vw, 140px);
+  --tile-gap: 18px;
+  --tile-w: calc((100vw - 5 * var(--tile-gap)) / 4); /* four slots across */
 }
 
 * { box-sizing: border-box; }
@@ -190,7 +192,8 @@ img { display: block; max-width: 100%; }
 .cat__scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0,0,0,.82) 0%, rgba(0,0,0,.45) 60%, rgba(0,0,0,.2) 100%);
+  /* the backdrop has to sit further back now that framed work sits on top of it */
+  background: linear-gradient(90deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.66) 60%, rgba(0,0,0,.5) 100%);
   pointer-events: none;
 }
 .cat__body {
@@ -244,6 +247,73 @@ img { display: block; max-width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cat__next svg { animation: none; opacity: .5; }
+}
+
+/* ---------- category strip: four slots, looping sideways ---------- */
+.cat__strip {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(var(--pad-x) * -1);
+  margin-top: 10px;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: pan-y; /* vertical scroll stays the browser's, sideways is ours */
+  user-select: none;
+  /* the row dissolves at both edges instead of being cut by a hard line */
+  -webkit-mask: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+  mask: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+}
+.cat__strip.is-dragging { cursor: grabbing; }
+.strip__track {
+  display: flex;
+  gap: var(--tile-gap);
+  padding-left: var(--tile-gap);
+  will-change: transform;
+}
+.tile {
+  position: relative;
+  flex: 0 0 var(--tile-w);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0d0d0d;
+  outline: 1px solid rgba(255, 255, 255, .07);
+  outline-offset: -1px;
+  transition: opacity .5s ease, transform .6s var(--ease);
+}
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.07);
+  transition: transform 1s var(--ease);
+  user-select: none;
+}
+.tile__cap {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--white);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .4s ease, transform .5s var(--ease);
+}
+/* the hovered slot comes forward, the rest step back */
+.cat__strip:hover .tile { opacity: .38; }
+.cat__strip:hover .tile:hover { opacity: 1; transform: scale(1.03); }
+.tile:hover img { transform: scale(1); }
+.tile:hover .tile__cap { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 900px) {
+  :root { --tile-w: calc((100vw - 4 * var(--tile-gap)) / 2.4); }
+}
+@media (max-width: 560px) {
+  :root { --tile-gap: 12px; --tile-w: calc((100vw - 3 * var(--tile-gap)) / 1.35); }
 }
 
 /* ---------- portfolio ---------- */

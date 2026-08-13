@@ -296,6 +296,175 @@
     paint();
   }
 
+  /* ---------- category strip: an endless row of four, coupled to the scroll ----------
+     The row is never idle scenery: it drifts on its own, but the speed it actually
+     travels at is the vertical scroll velocity pushed sideways, and it leans into
+     that push. Dragging hands the row to the pointer and lets it coast out. */
+  function wireCategoryStrips() {
+    var strips = Array.prototype.slice.call(document.querySelectorAll("[data-strip]"));
+    if (!strips.length || !window.WORKS) return;
+
+    var scroller = document.querySelector(".snap");
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var COPIES = 3;      /* enough width that a wrap is never visible */
+    var DRIFT = 22;      /* px/s the row moves when nothing else is happening */
+    var PUSH = 0.85;     /* how hard vertical scroll velocity shoves it sideways */
+    var MAX_SKEW = 3;    /* deg: the lean that sells the momentum */
+
+    /* four distinct slots: the category's own work first, topped up from the rest */
+    function slotsFor(name) {
+      var mine = window.WORKS.filter(function (w) { return w.category === name; });
+      var rest = window.WORKS.filter(function (w) { return w.category !== name; });
+      while (mine.length < 4 && rest.length) mine.push(rest.shift());
+      while (mine.length && mine.length < 4) mine.push(mine[mine.length - 1]);
+      return mine.slice(0, 4);
+    }
+
+    function tileHTML(w, ghost) {
+      return '<a class="tile" href="' + w.href + '" target="_blank" rel="noopener"' +
+             (ghost ? ' tabindex="-1" aria-hidden="true"' : '') + '>' +
+               '<img src="' + w.img + '" alt="' + (ghost ? "" : w.title) + '" ' +
+                 'loading="lazy" draggable="false" />' +
+               '<span class="tile__cap">' + w.title + '</span>' +
+             '</a>';
+    }
+
+    var rows = strips.map(function (el, i) {
+      var sec = el.closest("section");
+      var name = sec ? sec.dataset.cat : "";
+      var slots = slotsFor(name);
+      var html = "";
+      for (var c = 0; c < COPIES; c++) {
+        html += slots.map(function (w) { return tileHTML(w, c > 0); }).join("");
+      }
+      el.innerHTML = '<div class="strip__track">' + html + "</div>";
+
+      return {
+        el: el,
+        sec: sec,
+        track: el.firstChild,
+        count: slots.length,
+        dir: i % 2 === 0 ? -1 : 1, /* alternate, so the screens are not a pattern */
+        x: 0,
+        half: 0,
+        seen: true,
+        dragging: false,
+        dragV: 0,
+        moved: 0
+      };
+    });
+
+    /* the wrap distance is the exact offset of the second copy's first tile:
+       deriving it from scrollWidth would be off by a gap and the seam would jitter */
+    function measure() {
+      rows.forEach(function (r) {
+        var tiles = r.track.children;
+        r.half = tiles.length > r.count
+          ? tiles[r.count].offsetLeft - tiles[0].offsetLeft
+          : 0;
+      });
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("load", measure);
+
+    if (reduce) return; /* the row stays where it is, still readable and clickable */
+
+    /* skip the work for screens that are nowhere near the viewport */
+    if (window.IntersectionObserver) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          rows.forEach(function (r) { if (r.sec === e.target) r.seen = e.isIntersecting; });
+        });
+      }, { root: scroller, rootMargin: "50% 0px" });
+      rows.forEach(function (r) { if (r.sec) io.observe(r.sec); });
+    }
+
+    /* ---- drag to scrub ---- */
+    rows.forEach(function (r) {
+      var lastX = 0, lastT = 0;
+
+      r.el.addEventListener("pointerdown", function (e) {
+        if (e.button) return;
+        r.dragging = true;
+        r.moved = 0;
+        r.dragV = 0;
+        lastX = e.clientX;
+        lastT = performance.now();
+        r.el.classList.add("is-dragging");
+        r.el.setPointerCapture(e.pointerId);
+      });
+
+      r.el.addEventListener("pointermove", function (e) {
+        if (!r.dragging) return;
+        var now = performance.now();
+        var dx = e.clientX - lastX;
+        var dt = Math.max(16, now - lastT) / 1000;
+        r.x += dx;
+        r.moved += Math.abs(dx);
+        r.dragV = dx / dt;
+        lastX = e.clientX;
+        lastT = now;
+      });
+
+      function release(e) {
+        if (!r.dragging) return;
+        r.dragging = false;
+        r.el.classList.remove("is-dragging");
+        if (e.pointerId !== undefined && r.el.releasePointerCapture) {
+          try { r.el.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+        }
+      }
+      r.el.addEventListener("pointerup", release);
+      r.el.addEventListener("pointercancel", release);
+
+      /* a drag that ends on a tile must not count as a click through to Behance */
+      r.el.addEventListener("click", function (e) {
+        if (r.moved > 6) { e.preventDefault(); e.stopPropagation(); }
+      }, true);
+    });
+
+    /* ---- one loop drives every row ---- */
+    var lastT = performance.now();
+    var lastY = scroller ? scroller.scrollTop : 0;
+    var vel = 0;
+
+    (function frame(now) {
+      var dt = Math.min(0.05, (now - lastT) / 1000);
+      lastT = now;
+
+      /* read the scroll before writing any transform, so nothing forces a layout */
+      var y = scroller ? scroller.scrollTop : window.pageYOffset;
+      var raw = dt > 0 ? (y - lastY) / dt : 0;
+      lastY = y;
+      vel += (raw - vel) * 0.12; /* smoothed: the lean should not twitch */
+
+      var skew = Math.max(-MAX_SKEW, Math.min(MAX_SKEW, vel * 0.005));
+
+      rows.forEach(function (r) {
+        if (!r.seen || !r.half) return;
+
+        if (r.dragging) {
+          /* the pointer already moved x directly */
+        } else {
+          r.x += (DRIFT * r.dir + vel * PUSH * r.dir + r.dragV) * dt;
+          r.dragV *= Math.pow(0.94, dt * 60); /* coast out after a throw */
+          if (Math.abs(r.dragV) < 1) r.dragV = 0;
+        }
+
+        /* keep x inside one copy's width: the wrap is invisible */
+        r.x = r.x % r.half;
+        if (r.x > 0) r.x -= r.half;
+
+        r.track.style.transform =
+          "translate3d(" + r.x.toFixed(2) + "px,0,0) skewX(" + skew.toFixed(2) + "deg)";
+      });
+
+      requestAnimationFrame(frame);
+    })(lastT);
+  }
+
   /* ---------- cursor-reactive particle background ---------- */
   function startFx() {
     var c = document.getElementById("fx");
@@ -371,5 +540,6 @@
   wireHoverGroups();
   wireSectionGlide();
   wireCategoryImages();
+  wireCategoryStrips();
   startFx();
 })();
