@@ -284,10 +284,11 @@ img { display: block; max-width: 100%; }
 }
 .contact__top { display: flex; flex-direction: column; gap: 26px; }
 .contact__mail {
-  font-size: clamp(30px, 6vw, 86px);
+  font-size: clamp(20px, 4.2vw, 56px);
   font-weight: 300;
   letter-spacing: -.03em;
-  line-height: 1;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 .contact__social {
   display: flex;
