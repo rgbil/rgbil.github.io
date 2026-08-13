@@ -1,0 +1,19 @@
+# Georgia Biliouli (rgbil)
+
+> Portfolio of Georgia Biliouli, a graphic designer working in branding, packaging and cover art.
+
+Georgia Biliouli is a graphic designer based in Greece, working across Branding, Packaging, Covers & Posters. Contact: georgia.biliouli@gmail.com
+
+## Work
+
+- [Project 01](https://rgbil.com/work/project-01/): Branding, 2026
+- [Project 02](https://rgbil.com/work/project-02/): Packaging, 2026
+- [Project 03](https://rgbil.com/work/project-03/): Covers & Posters, 2026
+- [Project 04](https://rgbil.com/work/project-04/): Branding, 2026
+- [Project 05](https://rgbil.com/work/project-05/): Packaging, 2026
+- [Project 06](https://rgbil.com/work/project-06/): Covers & Posters, 2026
+
+## Pages
+
+- [Home](https://rgbil.com/): full portfolio, about and contact
+- [Sitemap](https://rgbil.com/sitemap.xml)
