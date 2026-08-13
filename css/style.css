@@ -9,6 +9,12 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --pad-x: clamp(44px, 8vw, 140px);
+  /* A4 slot width: whichever runs out first, the screen's width or its height.
+     70.71vh is the width of an A4 that stands full height, so on wide screens the
+     height binds and the band fills the screen; on narrow ones the width binds and
+     the band shortens instead of spilling past the edges. Either way the reader
+     sees the same slice of the strip. */
+  --slot-w: min(72vw, 70.71vh);
 }
 
 * { box-sizing: border-box; }
@@ -277,6 +283,8 @@ img { display: block; max-width: 100%; }
 .cat__strip {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center; /* when the band is shorter than the screen, it sits centred */
   overflow: hidden;
   pointer-events: auto;
   cursor: grab;
@@ -295,15 +303,13 @@ img { display: block; max-width: 100%; }
 .cat__strip > img ~ img { display: none; }
 .strip__track {
   display: flex;
-  height: 100%;
+  height: calc(var(--slot-w) * 1.4142); /* A4: the long side is width x root two */
   will-change: transform;
 }
 .tile {
   position: relative;
-  /* full height as before; the width is whatever A4 portrait makes it */
-  flex: 0 0 auto;
+  flex: 0 0 var(--slot-w);
   height: 100%;
-  aspect-ratio: 210 / 297;
   overflow: hidden;
   background: #0b0b0b;
 }
