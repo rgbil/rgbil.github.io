@@ -242,12 +242,10 @@
       return pts;
     }
 
-    /* called once the gesture has stopped: ease onto the nearest rest point */
-    function settle() {
-      if (animating) return;
-      var y = main.scrollTop;
+    /* the rest point worth going to from y, or null to leave the reader alone */
+    function nearestRest(y) {
       var max = main.scrollHeight - vh();
-      if (y <= 1 || y >= max - 1) return;
+      if (y <= 1 || y >= max - 1) return null;
 
       var best = null, bestD = Infinity;
       restPoints().forEach(function (pt) {
@@ -255,9 +253,18 @@
         if (d < bestD) { bestD = d; best = pt; }
       });
       /* more than half a screen away means the reader is mid-section: leave them be */
-      if (best === null || bestD < 2 || bestD > vh() * 0.5) return;
+      if (best === null || bestD < 2 || bestD > vh() * 0.5) return null;
+      return best;
+    }
 
-      glideY(best, Math.min(620, 280 + (bestD / vh()) * 520));
+    /* the touch path has no chase to fold into, so it lands on its own glide,
+       timed to sit in the same weight class as the wheel */
+    function settle() {
+      if (animating || coasting) return;
+      var pt = nearestRest(main.scrollTop);
+      if (pt === null) return;
+      var d = Math.abs(pt - main.scrollTop);
+      glideY(pt, Math.min(880, 400 + (d / vh()) * 620));
     }
 
     /* a section taller than the viewport keeps its own scroll until an edge is hit */
@@ -270,7 +277,7 @@
     /* the wheel and the finger are never intercepted; we only take over once the
        scroll has been still for a moment, which is also after touch momentum ends */
     main.addEventListener("scroll", function () {
-      if (animating) return;
+      if (animating || coasting) return; /* the chase lands itself */
       clearTimeout(idle);
       idle = setTimeout(settle, 140);
     }, { passive: true });
@@ -286,9 +293,14 @@
     var lastFrame = performance.now();
 
     var GRIP = 0.09;      /* share of the remaining distance taken per frame */
+    var AIM_GRIP = 0.11;  /* a touch firmer once it is landing on a screen */
     var STEP = 0.85;      /* a notch travels slightly less than the browser's own */
     var TOP_SPEED = 1.7;  /* screens per second, the hard ceiling */
     var QUEUE = 1.2;      /* screens that may be banked up ahead at any moment */
+    var QUIET = 110;      /* ms of stillness that means the gesture is over */
+
+    var lastWheelAt = 0;
+    var aimed = false;
 
     main.addEventListener("wheel", function (e) {
       if (e.ctrlKey) return;                              /* pinch zoom */
@@ -303,6 +315,8 @@
       else if (e.deltaMode === 2) d *= vh(); /* pages */
 
       if (!coasting) { current = main.scrollTop; target = current; coasting = true; }
+      lastWheelAt = performance.now();
+      aimed = false;
 
       var max = main.scrollHeight - vh();
       target = Math.max(0, Math.min(max, target + d * STEP));
@@ -318,7 +332,17 @@
       lastFrame = now;
 
       if (coasting && !animating) {
-        var step = (target - current) * (1 - Math.pow(1 - GRIP, dt * 60));
+        /* the moment the gesture goes quiet, the screen edge becomes the target the
+           page is already chasing: the snap is the same motion finishing, not a
+           second animation with its own curve stapled onto the end */
+        if (!aimed && now - lastWheelAt > QUIET) {
+          var rest = nearestRest(current);
+          if (rest !== null) target = rest;
+          aimed = true;
+        }
+
+        var grip = aimed ? AIM_GRIP : GRIP;
+        var step = (target - current) * (1 - Math.pow(1 - grip, dt * 60));
         var limit = vh() * TOP_SPEED * dt;
         if (step > limit) step = limit; else if (step < -limit) step = -limit;
         current += step;
@@ -326,7 +350,6 @@
         if (Math.abs(target - current) < 0.5) {
           current = target;
           coasting = false;
-          idle = setTimeout(settle, 90); /* and then land on the nearest screen */
         }
         main.scrollTop = current;
       }
