@@ -9,7 +9,7 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --pad-x: clamp(44px, 8vw, 140px);
-  --tile-w: 25vw; /* four slots fill the screen exactly */
+  --tile-w: 34vw; /* wide slots: the photos get room instead of being sliced */
 }
 
 * { box-sizing: border-box; }
@@ -217,8 +217,8 @@ img { display: block; max-width: 100%; }
 .cat__scrim {
   position: absolute;
   inset: 0;
-  /* the backdrop has to sit further back now that framed work sits on top of it */
-  background: linear-gradient(90deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.66) 60%, rgba(0,0,0,.5) 100%);
+  /* 30% lighter than before: the photographs carry the screen, not the wash */
+  background: linear-gradient(90deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.46) 60%, rgba(0,0,0,.35) 100%);
   pointer-events: none;
 }
 .cat__body {
@@ -315,8 +315,8 @@ img { display: block; max-width: 100%; }
   user-select: none;
 }
 
-@media (max-width: 900px) { :root { --tile-w: 42vw; } }
-@media (max-width: 560px) { :root { --tile-w: 66vw; } }
+@media (max-width: 900px) { :root { --tile-w: 56vw; } }
+@media (max-width: 560px) { :root { --tile-w: 84vw; } }
 
 /* ---------- portfolio ---------- */
 .work {
