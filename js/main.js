@@ -196,9 +196,8 @@
     var scroller = document.querySelector(".snap");
     if (!scroller) return;
 
-    var FAR = 1.16;    /* image scale while the screen is away from centre */
-    var NEAR = 1.06;   /* image scale once centred (stays > 1: no edge gaps) */
-    var HOVER = 0.95;  /* inner layer, multiplies with the outer one */
+    var FAR = 1.16;    /* band scale while the screen is away from centre */
+    var NEAR = 1.06;   /* band scale once centred (stays > 1: no edge gaps) */
     var LABEL_LAG = 46;  /* px the copy trails the scroll: the parallax depth */
     var TITLE_LAG = 40;  /* the headline trails further still */
     var VEIL = 0.6;      /* how far the screen sinks into black off-centre */
@@ -211,7 +210,6 @@
       items.push({
         sec: sec,
         layer: el,
-        img: el.querySelector("img"),
         veil: sec.querySelector("[data-catveil]"),
         body: sec.querySelector(".cat__body"),
         title: sec.querySelector(".cat__title"),
@@ -221,8 +219,6 @@
     });
     if (!items.length) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    var lastScroll = 0;
 
     function smoothstep(t) { return t * t * (3 - 2 * t); }
 
@@ -269,7 +265,6 @@
 
     var ticking = false;
     function onScroll() {
-      lastScroll = Date.now();
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(function () {
@@ -281,18 +276,6 @@
     scroller.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
 
-    items.forEach(function (it) {
-      if (!it.img) return;
-      it.sec.addEventListener("mouseenter", function () {
-        /* skip the mouseenter that scrolling fires under a still cursor */
-        if (Date.now() - lastScroll < 250) return;
-        it.img.style.transform = "scale(" + HOVER + ") translateZ(0)";
-      });
-      it.sec.addEventListener("mouseleave", function () {
-        it.img.style.transform = "scale(1) translateZ(0)";
-      });
-    });
-
     paint();
   }
 
@@ -302,7 +285,7 @@
      that push. Dragging hands the row to the pointer and lets it coast out. */
   function wireCategoryStrips() {
     var strips = Array.prototype.slice.call(document.querySelectorAll("[data-strip]"));
-    if (!strips.length || !window.WORKS) return;
+    if (!strips.length) return;
 
     var scroller = document.querySelector(".snap");
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -312,31 +295,21 @@
     var PUSH = 0.85;     /* how hard vertical scroll velocity shoves it sideways */
     var MAX_SKEW = 3;    /* deg: the lean that sells the momentum */
 
-    /* four distinct slots: the category's own work first, topped up from the rest */
-    function slotsFor(name) {
-      var mine = window.WORKS.filter(function (w) { return w.category === name; });
-      var rest = window.WORKS.filter(function (w) { return w.category !== name; });
-      while (mine.length < 4 && rest.length) mine.push(rest.shift());
-      while (mine.length && mine.length < 4) mine.push(mine[mine.length - 1]);
-      return mine.slice(0, 4);
-    }
-
-    function tileHTML(w, ghost) {
-      return '<a class="tile" href="' + w.href + '" target="_blank" rel="noopener"' +
-             (ghost ? ' tabindex="-1" aria-hidden="true"' : '') + '>' +
-               '<img src="' + w.img + '" alt="' + (ghost ? "" : w.title) + '" ' +
-                 'loading="lazy" draggable="false" />' +
-               '<span class="tile__cap">' + w.title + '</span>' +
-             '</a>';
-    }
-
     var rows = strips.map(function (el, i) {
       var sec = el.closest("section");
-      var name = sec ? sec.dataset.cat : "";
-      var slots = slotsFor(name);
+      /* the photos are whatever the markup lists: no links, nothing to click through */
+      var srcs = Array.prototype.map.call(el.querySelectorAll("img"), function (im) {
+        return im.getAttribute("src");
+      });
+      if (!srcs.length) return null;
+
       var html = "";
       for (var c = 0; c < COPIES; c++) {
-        html += slots.map(function (w) { return tileHTML(w, c > 0); }).join("");
+        html += srcs.map(function (src) {
+          return '<div class="tile" aria-hidden="true">' +
+                   '<img src="' + src + '" alt="" draggable="false" />' +
+                 '</div>';
+        }).join("");
       }
       el.innerHTML = '<div class="strip__track">' + html + "</div>";
 
@@ -344,7 +317,7 @@
         el: el,
         sec: sec,
         track: el.firstChild,
-        count: slots.length,
+        count: srcs.length,
         dir: i % 2 === 0 ? -1 : 1, /* alternate, so the screens are not a pattern */
         x: 0,
         half: 0,
@@ -353,7 +326,8 @@
         dragV: 0,
         moved: 0
       };
-    });
+    }).filter(Boolean);
+    if (!rows.length) return;
 
     /* the wrap distance is the exact offset of the second copy's first tile:
        deriving it from scrollWidth would be off by a gap and the seam would jitter */
@@ -418,11 +392,6 @@
       }
       r.el.addEventListener("pointerup", release);
       r.el.addEventListener("pointercancel", release);
-
-      /* a drag that ends on a tile must not count as a click through to Behance */
-      r.el.addEventListener("click", function (e) {
-        if (r.moved > 6) { e.preventDefault(); e.stopPropagation(); }
-      }, true);
     });
 
     /* ---- one loop drives every row ---- */
