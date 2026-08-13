@@ -204,11 +204,13 @@
       return;
     }
 
-    var ghost = document.createElement("img");
-    ghost.src = heroLogo.getAttribute("src");
-    ghost.alt = "";
-    ghost.className = "logo-ghost";
+    /* clone whatever the hero holds, so this works for the inline mark and for a
+       raster fallback alike. Note className is read-only on SVG elements: it has to
+       be set as an attribute or the copy silently keeps the hero's styling. */
+    var ghost = heroLogo.cloneNode(true);
+    ghost.setAttribute("class", "logo-ghost");
     ghost.setAttribute("aria-hidden", "true");
+    ghost.removeAttribute("id");
     document.body.appendChild(ghost);
     heroLogo.style.opacity = "0"; /* the ghost is what you see from now on */
 

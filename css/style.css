@@ -89,6 +89,9 @@ img { display: block; max-width: 100%; }
 }
 .cta:hover { color: var(--accent); border-color: var(--accent); }
 
+/* the symbol definition: present in the document, never rendered */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
 /* ---------- nav ---------- */
 .nav {
   position: fixed;
@@ -131,6 +134,8 @@ img { display: block; max-width: 100%; }
    and rendered at hero size then scaled down, so it stays sharp the whole way */
 .logo-ghost {
   position: fixed;
+  color: var(--white);
+  fill: currentColor;
   top: 0;
   left: 0;
   z-index: 60;
@@ -139,25 +144,16 @@ img { display: block; max-width: 100%; }
   will-change: transform, opacity;
   backface-visibility: hidden;
 }
-.nav__logo img {
+/* the mark is drawn, not masked: colour is simply inherited */
+.nav__logo svg {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-}
-.nav__logo::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--accent);
-  -webkit-mask: url(../img/logo.png) center / contain no-repeat;
-  mask: url(../img/logo.png) center / contain no-repeat;
-  opacity: 0;
-  transition: opacity .3s ease;
+  fill: currentColor;
+  transition: fill .3s ease;
 }
 .nav__logo.is-in { opacity: 1; pointer-events: auto; }
-.nav__logo.is-in:hover { transform: scale(1.14); }
-.nav__logo.is-in:hover::after { opacity: 1; }
+.nav__logo.is-in:hover { transform: scale(1.14); color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
   .nav__logo { transition: opacity .2s ease; }
@@ -423,7 +419,7 @@ img { display: block; max-width: 100%; }
   padding: 120px 44px 80px;
   text-align: center;
 }
-.hero__logo { width: min(300px, 46vw); height: auto; }
+.hero__logo { width: min(300px, 46vw); height: auto; fill: currentColor; }
 .hero__name {
   margin: 0;
   font-size: clamp(28px, 4.4vw, 58px);
@@ -897,7 +893,7 @@ img { display: block; max-width: 100%; }
   padding: 60px var(--pad-x);
   text-align: center;
 }
-.nf__logo { width: 96px; height: auto; opacity: .9; margin-bottom: 8px; }
+.nf__logo { width: 96px; height: auto; fill: currentColor; opacity: .9; margin-bottom: 8px; }
 .nf__title {
   margin: 0;
   font-size: clamp(30px, 5vw, 62px);
