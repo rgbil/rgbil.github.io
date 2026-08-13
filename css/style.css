@@ -54,6 +54,7 @@ img { display: block; max-width: 100%; }
   overflow-y: scroll;
   overflow-x: hidden;
   scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
   scrollbar-width: none;
 }
 .snap::-webkit-scrollbar { display: none; }
@@ -199,6 +200,35 @@ img { display: block; max-width: 100%; }
   font-weight: 400;
   letter-spacing: -.035em;
   line-height: .92;
+}
+.cat__next {
+  position: absolute;
+  left: 50%;
+  bottom: 38px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  color: var(--white);
+  transform: translate(-50%, 0);
+  transition: color .3s ease, border-color .3s ease;
+  animation: nudge 2.6s ease-in-out infinite;
+}
+.cat__next:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  animation-play-state: paused;
+}
+@keyframes nudge {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 7px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat__next { animation: none; transform: translate(-50%, 0); }
 }
 
 /* ---------- portfolio ---------- */
@@ -370,5 +400,6 @@ img { display: block; max-width: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+  .snap { scroll-behavior: auto; }
   .fx { display: none; }
 }
