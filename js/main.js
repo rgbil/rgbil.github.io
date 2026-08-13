@@ -97,17 +97,31 @@
        receding into the distance before it docks, instead of sliding at one rate */
     function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
     function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+    function smoothstep(t) { return t * t * (3 - 2 * t); }
 
     var HANDOVER = 0.88; /* the last stretch, where both marks coincide */
+    var FOLLOW = 0.62;   /* how much of the scroll the mark rides before docking */
+
+    /* the copy clears out in sequence, bottom line first, each drifting up as it goes */
+    var fades = [
+      { el: document.querySelector(".hero__scroll"), from: 0.00, to: 0.22, lift: 26 },
+      { el: document.querySelector(".hero__role"), from: 0.05, to: 0.32, lift: 34 },
+      { el: document.querySelector(".hero__name"), from: 0.10, to: 0.44, lift: 44 }
+    ].filter(function (f) { return f.el; });
 
     function paint() {
       var vh = scroller.clientHeight || 1;
-      var p = Math.min(1, Math.max(0, scroller.scrollTop / vh));
+      var y = scroller.scrollTop;
+      var p = Math.min(1, Math.max(0, y / vh));
       var pos = easeInOut(p);
       var s = 1 + easeOut(p) * (k - 1);
 
+      /* it rides most of the scroll like the rest of the hero, and is drawn out of
+         that ride into the nav slot: moving with the page is what makes it feel alive,
+         the pull is what stops it leaving the screen */
+      var from = hcy - y * FOLLOW;
       var cx = hcx + pos * (ncx - hcx);
-      var cy = hcy + pos * (ncy - hcy);
+      var cy = from + pos * (ncy - from);
       /* the box is placed so its centre lands on the path; scale and tilt pivot there */
       var tx = cx - hw / 2;
       var ty = cy - hh / 2;
@@ -122,6 +136,14 @@
       ghost.style.opacity = 1 - hand;
       navLogo.style.opacity = hand;
       navLogo.classList.toggle("is-in", hand > 0.9);
+
+      fades.forEach(function (f) {
+        var t = (p - f.from) / (f.to - f.from);
+        t = smoothstep(Math.min(1, Math.max(0, t)));
+        f.el.style.opacity = (1 - t).toFixed(3);
+        f.el.style.transform = "translate3d(0," + (-t * f.lift).toFixed(1) + "px,0)";
+        f.el.style.pointerEvents = t > 0.95 ? "none" : "";
+      });
     }
 
     var ticking = false;
