@@ -40,29 +40,68 @@
     });
   }
 
-  /* ---------- category images: zoom out on entering view, extra on hover ---------- */
+  /* ---------- category images: zoom follows scroll position, extra on hover ---------- */
   function wireCategoryImages() {
     var scroller = document.querySelector(".snap");
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        var img = e.target.querySelector("[data-catimg]");
-        if (!img) return;
-        img.dataset.inview = e.isIntersecting ? "1" : "0";
-        img.style.transform = e.isIntersecting ? "scale(1.05)" : "scale(1.15)";
-      });
-    }, { root: scroller, threshold: 0.55 });
+    if (!scroller) return;
 
-    document.querySelectorAll("[data-catimg]").forEach(function (img) {
-      var sec = img.closest("section");
-      if (!sec) return;
-      io.observe(sec);
-      sec.addEventListener("mouseenter", function () {
-        img.style.transform = "scale(1)";
+    var FAR = 1.16;   /* scale while the section is away from centre */
+    var NEAR = 1.06;  /* scale once it is centred (stays > 1: no edge gaps) */
+    var HOVER = 0.95; /* inner layer, multiplies with the outer one */
+
+    var items = [];
+    document.querySelectorAll("[data-catimg]").forEach(function (el) {
+      var sec = el.closest("section");
+      if (sec) items.push({ sec: sec, layer: el, img: el.querySelector("img"), last: -1 });
+    });
+    if (!items.length) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var lastScroll = 0;
+
+    function paint() {
+      var vh = window.innerHeight || 1;
+      var centre = vh / 2;
+      items.forEach(function (it) {
+        var r = it.sec.getBoundingClientRect();
+        if (r.bottom < -vh || r.top > vh * 2) return;
+        /* 0 when the section sits at the centre, 1 when it is a screen away */
+        var d = Math.min(1, Math.abs((r.top + r.height / 2) - centre) / vh);
+        var eased = d * d * (3 - 2 * d); /* smoothstep: softens both ends */
+        var s = Math.round((NEAR + (FAR - NEAR) * eased) * 1000) / 1000;
+        if (s === it.last) return;
+        it.last = s;
+        it.layer.style.transform = "scale(" + s + ") translateZ(0)";
       });
-      sec.addEventListener("mouseleave", function () {
-        img.style.transform = img.dataset.inview === "0" ? "scale(1.15)" : "scale(1.05)";
+    }
+
+    var ticking = false;
+    function onScroll() {
+      lastScroll = Date.now();
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        paint();
+      });
+    }
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+
+    items.forEach(function (it) {
+      if (!it.img) return;
+      it.sec.addEventListener("mouseenter", function () {
+        /* skip the mouseenter that scrolling fires under a still cursor */
+        if (Date.now() - lastScroll < 250) return;
+        it.img.style.transform = "scale(" + HOVER + ") translateZ(0)";
+      });
+      it.sec.addEventListener("mouseleave", function () {
+        it.img.style.transform = "scale(1) translateZ(0)";
       });
     });
+
+    paint();
   }
 
   /* ---------- cursor-reactive particle background ---------- */
