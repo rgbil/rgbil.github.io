@@ -724,7 +724,7 @@
         half: 0,
         seen: true,
         dragging: false,
-        dragV: 0,
+        push: 0,   /* px/s from a throw or a sideways gesture, decaying */
         moved: 0
       };
     }).filter(Boolean);
@@ -756,7 +756,9 @@
       rows.forEach(function (r) { if (r.sec) io.observe(r.sec); });
     }
 
-    /* ---- drag to scrub ---- */
+    /* ---- hand control: drag, throw, and sideways gestures ---- */
+    var MAX_PUSH = 3600;  /* px/s: past this the photographs stop being readable */
+
     rows.forEach(function (r) {
       var lastX = 0, lastT = 0;
 
@@ -764,7 +766,7 @@
         if (e.button) return;
         r.dragging = true;
         r.moved = 0;
-        r.dragV = 0;
+        r.push = 0;
         lastX = e.clientX;
         lastT = performance.now();
         r.el.classList.add("is-dragging");
@@ -778,7 +780,9 @@
         var dt = Math.max(16, now - lastT) / 1000;
         r.x += dx;
         r.moved += Math.abs(dx);
-        r.dragV = dx / dt;
+        /* averaged, not instantaneous: one twitchy sample at the moment of release
+           would otherwise decide the whole throw */
+        r.push += ((dx / dt) - r.push) * 0.35;
         lastX = e.clientX;
         lastT = now;
       });
@@ -790,9 +794,28 @@
         if (e.pointerId !== undefined && r.el.releasePointerCapture) {
           try { r.el.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
         }
+        if (r.push > MAX_PUSH) r.push = MAX_PUSH;
+        else if (r.push < -MAX_PUSH) r.push = -MAX_PUSH;
       }
       r.el.addEventListener("pointerup", release);
       r.el.addEventListener("pointercancel", release);
+
+      /* A sideways trackpad swipe, a horizontal wheel, or shift+wheel scrubs the row.
+         It feeds the same velocity the throw does, so the row carries on and eases
+         out rather than stopping dead with the fingers. The page keeps every purely
+         vertical gesture: those are never touched here. */
+      r.el.addEventListener("wheel", function (e) {
+        var sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+        var dx = sideways ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!dx) return;
+        if (e.deltaMode === 1) dx *= 16;                 /* lines */
+        else if (e.deltaMode === 2) dx *= window.innerWidth; /* pages */
+        e.preventDefault();
+        e.stopPropagation(); /* or the page would read shift+wheel as its own scroll */
+        r.push -= dx * 14;
+        if (r.push > MAX_PUSH) r.push = MAX_PUSH;
+        else if (r.push < -MAX_PUSH) r.push = -MAX_PUSH;
+      }, { passive: false });
     });
 
     /* ---- one loop drives every row ---- */
@@ -824,9 +847,10 @@
         if (r.dragging) {
           /* the pointer already moved x directly */
         } else {
-          r.x += (DRIFT * r.dir + vel * PUSH * r.dir + r.dragV) * dt;
-          r.dragV *= Math.pow(0.94, dt * 60); /* coast out after a throw */
-          if (Math.abs(r.dragV) < 1) r.dragV = 0;
+          r.x += (DRIFT * r.dir + vel * PUSH * r.dir + r.push) * dt;
+          /* a long coast, so a flick reads as weight rather than a nudge */
+          r.push *= Math.pow(0.962, dt * 60);
+          if (Math.abs(r.push) < 2) r.push = 0;
         }
 
         /* keep x inside one copy's width: the wrap is invisible */
