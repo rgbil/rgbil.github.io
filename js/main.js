@@ -40,6 +40,55 @@
     });
   }
 
+  /* ---------- cursor ---------- */
+  function wireCursor() {
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var cur = document.createElement("div");
+    cur.className = "cursor is-out";
+    cur.setAttribute("aria-hidden", "true");
+    cur.innerHTML = '<span class="cursor__dot"></span><span class="cursor__tag">DRAG</span>';
+    document.body.appendChild(cur);
+
+    var tx = window.innerWidth / 2, ty = window.innerHeight / 2;
+    var x = tx, y = ty;
+
+    document.addEventListener("pointermove", function (e) {
+      if (e.pointerType !== "mouse") return;
+      tx = e.clientX;
+      ty = e.clientY;
+      cur.classList.remove("is-out");
+
+      /* what is underneath decides the shape */
+      var t = e.target;
+      var drag = t.closest && t.closest("[data-strip]");
+      var link = t.closest && t.closest("a, button");
+      cur.classList.toggle("is-drag", !!drag);
+      cur.classList.toggle("is-link", !!link && !drag);
+    }, { passive: true });
+
+    document.addEventListener("pointerleave", function () { cur.classList.add("is-out"); });
+    window.addEventListener("blur", function () { cur.classList.add("is-out"); });
+
+    /* the ring trails rather than tracks: the lag is the whole character of it */
+    (function follow() {
+      x += (tx - x) * 0.19;
+      y += (ty - y) * 0.19;
+      cur.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0)";
+      requestAnimationFrame(follow);
+    })();
+  }
+
+  /* ---------- film grain ---------- */
+  function addGrain() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var g = document.createElement("div");
+    g.className = "grain";
+    g.setAttribute("aria-hidden", "true");
+    document.body.appendChild(g);
+  }
+
   /* ---------- mobile menu ---------- */
   function wireMenu() {
     var burger = document.querySelector(".burger");
@@ -804,6 +853,8 @@
 
   buildGrid();
   wireHoverGroups();
+  addGrain();
+  wireCursor();
   wireMenu();
   wireSectionGlide();
   wireNavLogo();
