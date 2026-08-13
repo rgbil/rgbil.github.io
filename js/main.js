@@ -40,6 +40,26 @@
     });
   }
 
+  /* ---------- nav logo: arrives once the hero is behind you ---------- */
+  function wireNavLogo() {
+    var logo = document.querySelector(".nav__logo");
+    var hero = document.getElementById("home");
+    if (!logo || !hero) return;
+
+    var scroller = document.querySelector(".snap");
+
+    function set(on) { logo.classList.toggle("is-in", on); }
+
+    if (!window.IntersectionObserver) { set(true); return; }
+
+    /* half the hero still on screen means we are effectively still on it */
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        set(!(e.isIntersecting && e.intersectionRatio >= 0.5));
+      });
+    }, { root: scroller, threshold: [0.5] }).observe(hero);
+  }
+
   /* ---------- section travel ----------
      Two different jobs. A click on an arrow or a nav link is a deliberate jump, so it
      gets the long eased glide. Plain scrolling stays the user's own: native snap is
@@ -508,6 +528,7 @@
   buildGrid();
   wireHoverGroups();
   wireSectionGlide();
+  wireNavLogo();
   wireCategoryImages();
   wireCategoryStrips();
   startFx();

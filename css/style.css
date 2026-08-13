@@ -111,18 +111,45 @@ img { display: block; max-width: 100%; }
 }
 .nav__side--end { justify-content: flex-end; }
 
+/* Hidden on the hero, where the full mark already carries the screen; it drops in
+   once that screen is left behind. A real <img> paints the mark, so it shows even
+   where mask-image does not: the accent wash on top is the part that needs a mask. */
 .nav__logo {
+  position: relative;
   display: block;
   width: 52px;
   height: 46px;
-  background: var(--white);
+  opacity: 0;
+  transform: translateY(-10px) scale(.8);
+  pointer-events: none;
+  transition: opacity .45s ease, transform .7s var(--ease);
+}
+.nav__logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.nav__logo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
   -webkit-mask: url(../img/logo.png) center / contain no-repeat;
   mask: url(../img/logo.png) center / contain no-repeat;
-  transition: background .3s ease, transform .5s var(--ease);
+  opacity: 0;
+  transition: opacity .3s ease;
 }
-.nav__logo:hover {
-  background: var(--accent);
-  transform: scale(1.14);
+.nav__logo.is-in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.nav__logo.is-in:hover { transform: translateY(0) scale(1.14); }
+.nav__logo.is-in:hover::after { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav__logo { transition: opacity .2s ease; transform: none; }
 }
 
 /* ---------- hero ---------- */
