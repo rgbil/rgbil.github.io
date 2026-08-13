@@ -40,6 +40,44 @@
     });
   }
 
+  /* ---------- mobile menu ---------- */
+  function wireMenu() {
+    var burger = document.querySelector(".burger");
+    var menu = document.getElementById("menu");
+    if (!burger || !menu) return;
+
+    var open = false;
+
+    function set(next) {
+      if (next === open) return;
+      open = next;
+      burger.classList.toggle("is-open", open);
+      menu.classList.toggle("is-open", open);
+      burger.setAttribute("aria-expanded", open ? "true" : "false");
+      burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      menu.setAttribute("aria-hidden", open ? "false" : "true");
+      /* the scroll handlers stand down while the panel is up */
+      document.body.classList.toggle("is-menu", open);
+      if (!open) burger.focus();
+    }
+
+    burger.addEventListener("click", function () { set(!open); });
+
+    /* a link both closes the panel and lets the usual glide take the click */
+    menu.addEventListener("click", function (e) {
+      if (e.target.closest("a")) set(false);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && open) set(false);
+    });
+
+    /* a menu built for narrow screens has no business staying open on a wide one */
+    window.addEventListener("resize", function () {
+      if (open && window.innerWidth > 760) set(false);
+    });
+  }
+
   /* ---------- the logo travels from the hero into the nav ----------
      Not a reveal: a copy of the hero mark is flown to the nav slot on a curve tied
      to how far the hero has been scrolled, shrinking and tilting through the middle,
@@ -303,6 +341,7 @@
     var aimed = false;
 
     main.addEventListener("wheel", function (e) {
+      if (document.body.classList.contains("is-menu")) return;
       if (e.ctrlKey) return;                              /* pinch zoom */
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; /* sideways gesture */
       e.preventDefault();
@@ -368,6 +407,7 @@
       ArrowUp: -1, PageUp: -1
     };
     window.addEventListener("keydown", function (e) {
+      if (document.body.classList.contains("is-menu")) return;
       var dir = KEYS[e.key];
       var tag = (e.target.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea") return;
@@ -622,6 +662,12 @@
       var dt = Math.min(0.05, (now - lastT) / 1000);
       lastT = now;
 
+      /* nothing to animate behind an opaque panel */
+      if (document.body.classList.contains("is-menu")) {
+        requestAnimationFrame(frame);
+        return;
+      }
+
       /* read the scroll before writing any transform, so nothing forces a layout */
       var y = scroller ? scroller.scrollTop : window.pageYOffset;
       var raw = dt > 0 ? (y - lastY) / dt : 0;
@@ -726,6 +772,7 @@
 
   buildGrid();
   wireHoverGroups();
+  wireMenu();
   wireSectionGlide();
   wireNavLogo();
   wireCategoryImages();

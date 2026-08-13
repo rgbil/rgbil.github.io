@@ -166,6 +166,126 @@ img { display: block; max-width: 100%; }
   .logo-ghost { display: none; }
 }
 
+/* ---------- burger + mobile menu ----------
+   Lives outside .nav on purpose: .nav carries a z-index and would trap the button
+   underneath the panel it is meant to close. */
+.burger {
+  display: none;
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 90;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.burger__bar {
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--white);
+  transition: transform .5s var(--ease), background .3s ease, width .4s var(--ease);
+}
+.burger:hover .burger__bar { background: var(--accent); }
+/* the two rules fold onto each other and cross: no third bar to fade out */
+.burger.is-open .burger__bar:first-child { transform: translateY(4px) rotate(45deg); }
+.burger.is-open .burger__bar:last-child { transform: translateY(-4px) rotate(-45deg); }
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 40px;
+  padding: 110px 30px 40px;
+  background: var(--black);
+  visibility: hidden;
+  /* the panel is wiped down from the top rather than faded: a fade would show the
+     site through it and read as cheap overlay */
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path .75s var(--ease), visibility 0s linear .75s;
+}
+.menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(58% 44% at 78% 18%, rgba(221,57,102,.15), transparent 70%);
+  pointer-events: none;
+}
+.menu.is-open {
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path .75s var(--ease), visibility 0s;
+}
+.menu__nav { display: flex; flex-direction: column; }
+.menu__nav a {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 13px 0;
+  font-size: clamp(30px, 8.5vw, 52px);
+  font-weight: 300;
+  letter-spacing: -.02em;
+  line-height: 1;
+  border-bottom: 1px solid var(--line);
+}
+.menu__nav a i {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: .2em;
+  color: var(--dim);
+  transition: color .3s ease;
+}
+.menu__nav a:hover, .menu__nav a:active { color: var(--accent); }
+.menu__nav a:hover i { color: var(--accent); }
+
+.menu__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.menu__mail { font-size: 13px; letter-spacing: .06em; text-transform: none; color: var(--white); }
+.menu__social { display: flex; flex-wrap: wrap; gap: 24px; }
+
+/* every row rises into place behind the wipe, one after the next */
+.menu__nav a,
+.menu__foot {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity .45s ease, transform .65s var(--ease);
+}
+.menu.is-open .menu__nav a,
+.menu.is-open .menu__foot {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: calc(.2s + var(--i) * .06s);
+}
+
+@media (max-width: 760px) {
+  .nav__side { display: none; }
+  .burger { display: flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu { transition: visibility 0s; }
+  .menu__nav a, .menu__foot { transition: none; }
+}
+
 /* ---------- hero ---------- */
 .hero {
   display: flex;
