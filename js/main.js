@@ -99,8 +99,12 @@
     function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
     function smoothstep(t) { return t * t * (3 - 2 * t); }
 
-    var HANDOVER = 0.88; /* the last stretch, where both marks coincide */
-    var FOLLOW = 0.62;   /* how much of the scroll the mark rides before docking */
+    /* The swap may only happen once the two marks are the same size in the same
+       place: measured on the scroll, by 0.94 they agree to a fraction of a pixel.
+       Earlier than that and you see both at once, offset and tilted. */
+    var HANDOVER = 0.94;
+    var TILT_END = 0.8; /* upright well before the swap, for the same reason */
+    var FOLLOW = 0.62;  /* how much of the scroll the mark rides before docking */
 
     /* the copy clears out in sequence, bottom line first, each drifting up as it goes */
     var fades = [
@@ -125,14 +129,18 @@
       /* the box is placed so its centre lands on the path; scale and tilt pivot there */
       var tx = cx - hw / 2;
       var ty = cy - hh / 2;
-      var tilt = p * (1 - p) * 4 * 8; /* peaks mid-flight, flat at both ends */
 
+      var tp = Math.min(1, p / TILT_END);
+      var tilt = tp * (1 - tp) * 4 * 8; /* peaks mid-flight, flat by the approach */
+
+      /* once upright, drop the 3D functions entirely: a 0deg rotation still puts the
+         layer through the perspective rasteriser and lands it a hair off the flat one */
       ghost.style.transform =
         "translate3d(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px,0) " +
-        "perspective(900px) rotateX(" + tilt.toFixed(2) + "deg) " +
+        (tilt > 0.05 ? "perspective(900px) rotateX(" + tilt.toFixed(2) + "deg) " : "") +
         "scale(" + s.toFixed(4) + ")";
 
-      var hand = pos <= HANDOVER ? 0 : (pos - HANDOVER) / (1 - HANDOVER);
+      var hand = p <= HANDOVER ? 0 : (p - HANDOVER) / (1 - HANDOVER);
       ghost.style.opacity = 1 - hand;
       navLogo.style.opacity = hand;
       navLogo.classList.toggle("is-in", hand > 0.9);
@@ -342,15 +350,29 @@
 
     function smoothstep(t) { return t * t * (3 - 2 * t); }
 
-    function paint() {
-      var vh = window.innerHeight || 1;
-      var centre = vh / 2;
+    /* geometry is cached rather than read per frame: the strip loop writes transforms
+       every frame, so a getBoundingClientRect() here would force a synchronous layout
+       on each one, which is what makes the motion stutter */
+    function measure() {
       items.forEach(function (it) {
-        var r = it.sec.getBoundingClientRect();
-        if (r.bottom < -vh * 0.6 || r.top > vh * 1.6) return;
+        it.top = it.sec.offsetTop;
+        it.h = it.sec.offsetHeight;
+      });
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("load", measure);
+
+    function paint() {
+      var vh = scroller.clientHeight || 1;
+      var centre = vh / 2;
+      var y = scroller.scrollTop;
+      items.forEach(function (it) {
+        var top = it.top - y;
+        if (top + it.h < -vh * 0.6 || top > vh * 1.6) return;
 
         /* signed distance from centre: 0 centred, +1 a screen below, -1 above */
-        var p = ((r.top + r.height / 2) - centre) / vh;
+        var p = ((top + it.h / 2) - centre) / vh;
         if (p > 1) p = 1; else if (p < -1) p = -1;
         var d = Math.abs(p);
         var eased = smoothstep(d);
