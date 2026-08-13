@@ -1,0 +1,71 @@
+{
+  "showBehance": false,
+  "aboutText": "My name is Georgia Biliouli, and I am a graphic designer driven by a singular passion: transforming raw ideas into powerful, minimal visuals. I am deeply fascinated by the world of imagery and its profound ability to speak directly to the human psyche. To me, design is far more than just aesthetics; it is a universal language that creates a visual experience that leaves a lasting impact.",
+  "email": "hellooo@rgbil.com",
+  "socialLinks": {
+    "behance": "https://www.behance.net/rgbil",
+    "instagram": "https://www.instagram.com/",
+    "linkedin": "https://www.linkedin.com/"
+  },
+  "categories": [
+    {
+      "title": "Branding",
+      "img": "img/cat-branding.png",
+      "href": "https://www.behance.net/rgbil"
+    },
+    {
+      "title": "Packaging",
+      "img": "img/cat-packaging.png",
+      "href": "https://www.behance.net/rgbil"
+    },
+    {
+      "title": "Covers & Posters",
+      "img": "img/cat-covers.png",
+      "href": "https://www.behance.net/rgbil"
+    }
+  ],
+  "projects": [
+    {
+      "id": 1,
+      "title": "Project 01",
+      "category": "Branding",
+      "img": "img/work-1.png",
+      "href": "https://www.behance.net/rgbil"
+    },
+    {
+      "id": 2,
+      "title": "Project 02",
+      "category": "Packaging",
+      "img": "img/work-2.png",
+      "href": "https://www.behance.net/rgbil"
+    },
+    {
+      "id": 3,
+      "title": "Project 03",
+      "category": "Covers & Posters",
+      "img": "img/work-3.png",
+      "href": "https://www.behance.net/rgbil"
+    },
+    {
+      "id": 4,
+      "title": "Project 04",
+      "category": "Branding",
+      "img": "img/work-4.png",
+      "href": "https://www.behance.net/rgbil"
+    },
+    {
+      "id": 5,
+      "title": "Project 05",
+      "category": "Packaging",
+      "img": "img/work-5.png",
+      "href": "https://www.behance.net/rgbil"
+    },
+    {
+      "id": 6,
+      "title": "Project 06",
+      "category": "Covers & Posters",
+      "img": "img/work-6.png",
+      "href": "https://www.behance.net/rgbil"
+    }
+  ]
+}
