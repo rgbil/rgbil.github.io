@@ -307,6 +307,12 @@
       return pts;
     }
 
+    /* How close to a screen you must already be for it to claim you. A screen is one
+       viewport tall, so anything up to half a screen away has a nearest edge: pulling
+       from that far means every single stop gets corrected, which is what makes the
+       page feel like it is arguing with you. A quarter leaves the middle ground free. */
+    var SNAP_ZONE = 0.25;
+
     /* the rest point worth going to from y, or null to leave the reader alone */
     function nearestRest(y) {
       var max = main.scrollHeight - vh();
@@ -317,8 +323,7 @@
         var d = Math.abs(pt - y);
         if (d < bestD) { bestD = d; best = pt; }
       });
-      /* more than half a screen away means the reader is mid-section: leave them be */
-      if (best === null || bestD < 2 || bestD > vh() * 0.5) return null;
+      if (best === null || bestD < 2 || bestD > vh() * SNAP_ZONE) return null;
       return best;
     }
 
