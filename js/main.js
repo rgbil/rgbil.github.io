@@ -260,9 +260,36 @@
       });
     }
 
+    /* Long jumps are not scrolled. Racing past five screens to reach the sixth reads
+       as noise, not as travel, so the screen is taken to black, the page is moved
+       while nothing is visible, and the destination is revealed. */
+    var veil = document.createElement("div");
+    veil.className = "page-veil";
+    veil.setAttribute("aria-hidden", "true");
+    document.body.appendChild(veil);
+
+    function cutTo(i) {
+      cancelAnimationFrame(raf);
+      animating = true;
+      coasting = false;
+      veil.classList.add("is-on");
+
+      setTimeout(function () {
+        main.scrollTop = sections[i].offsetTop;
+        current = target = main.scrollTop;
+        /* give the scroll-driven layers a beat to repaint at the new position,
+           so the reveal shows the destination settled, not mid-adjustment */
+        setTimeout(function () {
+          veil.classList.remove("is-on");
+          setTimeout(function () { animating = false; }, 460);
+        }, 90);
+      }, 340);
+    }
+
     function glideTo(i) {
       i = Math.max(0, Math.min(sections.length - 1, i));
       var dist = Math.abs(sections[i].offsetTop - main.scrollTop);
+      if (dist > vh() * 1.6) return cutTo(i);
       /* one screen lands at ~950ms; longer jumps stretch, but not without limit */
       glideY(sections[i].offsetTop, Math.min(1500, 700 + (dist / vh()) * 260));
     }
