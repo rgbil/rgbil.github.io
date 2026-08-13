@@ -211,6 +211,7 @@
 
       cancelAnimationFrame(raf);
       animating = true;
+      coasting = false; /* the glide owns the scroll while it runs */
 
       var t0 = performance.now();
       raf = requestAnimationFrame(function step(now) {
@@ -274,13 +275,66 @@
       idle = setTimeout(settle, 140);
     }, { passive: true });
 
-    /* a drag on the scrollbar or a wheel mid-glide is the user overriding us */
-    main.addEventListener("wheel", function () {
-      if (!animating) return;
-      cancelAnimationFrame(raf);
-      animating = false;
-    }, { passive: true });
+    /* ---- weighted wheel ----
+       The wheel no longer writes the scroll position, it writes a target the page
+       chases. That gives the page mass: it takes up speed, it carries on a little
+       after the fingers stop, and a violent flick cannot throw it across the site,
+       because the distance it may cover in one frame is capped outright. */
+    var target = main.scrollTop;
+    var current = target;
+    var coasting = false;
+    var lastFrame = performance.now();
+
+    var GRIP = 0.09;      /* share of the remaining distance taken per frame */
+    var STEP = 0.85;      /* a notch travels slightly less than the browser's own */
+    var TOP_SPEED = 1.7;  /* screens per second, the hard ceiling */
+    var QUEUE = 1.2;      /* screens that may be banked up ahead at any moment */
+
+    main.addEventListener("wheel", function (e) {
+      if (e.ctrlKey) return;                              /* pinch zoom */
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; /* sideways gesture */
+      e.preventDefault();
+
+      /* a wheel mid-glide is the user overriding us */
+      if (animating) { cancelAnimationFrame(raf); animating = false; }
+
+      var d = e.deltaY;
+      if (e.deltaMode === 1) d *= 16;        /* lines */
+      else if (e.deltaMode === 2) d *= vh(); /* pages */
+
+      if (!coasting) { current = main.scrollTop; target = current; coasting = true; }
+
+      var max = main.scrollHeight - vh();
+      target = Math.max(0, Math.min(max, target + d * STEP));
+      /* momentum keeps firing events long after the flick: refuse to bank it all */
+      var cap = vh() * QUEUE;
+      target = Math.max(current - cap, Math.min(current + cap, target));
+
+      clearTimeout(idle);
+    }, { passive: false });
+
+    (function chase(now) {
+      var dt = Math.min(0.05, (now - lastFrame) / 1000);
+      lastFrame = now;
+
+      if (coasting && !animating) {
+        var step = (target - current) * (1 - Math.pow(1 - GRIP, dt * 60));
+        var limit = vh() * TOP_SPEED * dt;
+        if (step > limit) step = limit; else if (step < -limit) step = -limit;
+        current += step;
+
+        if (Math.abs(target - current) < 0.5) {
+          current = target;
+          coasting = false;
+          idle = setTimeout(settle, 90); /* and then land on the nearest screen */
+        }
+        main.scrollTop = current;
+      }
+      requestAnimationFrame(chase);
+    })(lastFrame);
+    /* a finger owns the scroll outright: drop both the glide and the wheel chase */
     main.addEventListener("touchstart", function () {
+      coasting = false;
       if (!animating) return;
       cancelAnimationFrame(raf);
       animating = false;
