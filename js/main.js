@@ -630,7 +630,14 @@
     var scroller = document.querySelector(".snap");
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    var COPIES = 3;      /* enough width that a wrap is never visible */
+    /* How many times the set is repeated. Three is plenty for four A4 slots, but a
+       category with one or two photos would leave the far side of a wide screen empty
+       after a wrap, so the count is derived from the actual width instead of assumed. */
+    function copiesFor(n) {
+      var slot = window.innerHeight * 0.7071; /* an A4 at full height */
+      var set = Math.max(1, n) * slot;
+      return Math.max(3, Math.ceil((2 * window.innerWidth) / set) + 1);
+    }
     var DRIFT = 22;      /* px/s the row moves when nothing else is happening */
     var PUSH = 0.85;     /* how hard vertical scroll velocity shoves it sideways */
     var MAX_SKEW = 3;    /* deg: the lean that sells the momentum */
@@ -643,8 +650,9 @@
       });
       if (!srcs.length) return null;
 
+      var copies = copiesFor(srcs.length);
       var html = "";
-      for (var c = 0; c < COPIES; c++) {
+      for (var c = 0; c < copies; c++) {
         html += srcs.map(function (src) {
           return '<div class="tile" aria-hidden="true">' +
                    '<img src="' + src + '" alt="" draggable="false" />' +
