@@ -40,6 +40,120 @@
     });
   }
 
+  /* ---------- section glide: we own the travel, not the browser's snap ----------
+     Native snap covers the distance in ~200ms on a flat curve, which reads as a cut
+     and leaves no time for the parallax layers to be seen. Here a wheel notch, a key
+     or an in-page link hands the scroll to one long eased animation instead. Touch is
+     left alone: native momentum already feels right and hijacking it does not. */
+  function wireSectionGlide() {
+    var main = document.querySelector(".snap");
+    if (!main) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    var sections = Array.prototype.slice.call(main.children);
+    if (sections.length < 2) return;
+
+    var animating = false;
+    var settledAt = 0;
+    var raf = 0;
+
+    function vh() { return main.clientHeight || 1; }
+
+    /* easeInOutCubic: leaves rest gently, arrives without a hard stop */
+    function ease(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function indexNow() {
+      var probe = main.scrollTop + vh() * 0.5;
+      for (var i = sections.length - 1; i >= 0; i--) {
+        if (probe >= sections[i].offsetTop) return i;
+      }
+      return 0;
+    }
+
+    function glideTo(i) {
+      i = Math.max(0, Math.min(sections.length - 1, i));
+      var from = main.scrollTop;
+      var to = sections[i].offsetTop;
+      var dist = to - from;
+      if (Math.abs(dist) < 2) return;
+
+      /* one screen lands at ~950ms; longer jumps stretch, but not without limit */
+      var screens = Math.abs(dist) / vh();
+      var dur = Math.min(1500, 700 + screens * 260);
+
+      cancelAnimationFrame(raf);
+      animating = true;
+      /* the browser would fight our writes while snap is armed */
+      main.style.scrollSnapType = "none";
+
+      var t0 = performance.now();
+      raf = requestAnimationFrame(function step(now) {
+        var t = Math.min(1, (now - t0) / dur);
+        main.scrollTop = from + dist * ease(t);
+        if (t < 1) {
+          raf = requestAnimationFrame(step);
+        } else {
+          main.style.scrollSnapType = "";
+          animating = false;
+          settledAt = Date.now();
+        }
+      });
+    }
+
+    /* a section taller than the viewport keeps its own scroll until an edge is hit */
+    function atEdge(sec, down) {
+      if (sec.offsetHeight <= vh() + 4) return true;
+      var top = main.scrollTop - sec.offsetTop;
+      return down ? top + vh() >= sec.offsetHeight - 2 : top <= 2;
+    }
+
+    main.addEventListener("wheel", function (e) {
+      if (e.ctrlKey || Math.abs(e.deltaY) < 4) return;
+      var down = e.deltaY > 0;
+      var i = indexNow();
+      if (!animating && !atEdge(sections[i], down)) return; /* native scroll inside */
+
+      e.preventDefault();
+      /* swallow the tail of trackpad momentum instead of firing a second jump */
+      if (animating || Date.now() - settledAt < 260) return;
+      glideTo(i + (down ? 1 : -1));
+    }, { passive: false });
+
+    var KEYS = {
+      ArrowDown: 1, PageDown: 1, " ": 1, Spacebar: 1,
+      ArrowUp: -1, PageUp: -1
+    };
+    window.addEventListener("keydown", function (e) {
+      var dir = KEYS[e.key];
+      var tag = (e.target.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      if (e.key === "Home") { e.preventDefault(); return glideTo(0); }
+      if (e.key === "End") { e.preventDefault(); return glideTo(sections.length - 1); }
+      if (!dir) return;
+      var i = indexNow();
+      if (!atEdge(sections[i], dir > 0)) return;
+      e.preventDefault();
+      if (!animating) glideTo(i + dir);
+    });
+
+    /* nav, hero "scroll", and the category arrows all travel on the same curve */
+    document.addEventListener("click", function (e) {
+      var link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+      if (!link) return;
+      var id = link.getAttribute("href").slice(1);
+      if (!id) return;
+      var target = document.getElementById(id);
+      if (!target) return;
+      var i = sections.indexOf(target);
+      if (i < 0) return;
+      e.preventDefault();
+      glideTo(i);
+      if (history.replaceState) history.replaceState(null, "", "#" + id);
+    });
+  }
+
   /* ---------- category screens: every layer moves off the same scroll position ---------- */
   function wireCategoryImages() {
     var scroller = document.querySelector(".snap");
@@ -218,6 +332,7 @@
 
   buildGrid();
   wireHoverGroups();
+  wireSectionGlide();
   wireCategoryImages();
   startFx();
 })();
