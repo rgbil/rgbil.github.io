@@ -48,7 +48,7 @@
         var img = e.target.querySelector("[data-catimg]");
         if (!img) return;
         img.dataset.inview = e.isIntersecting ? "1" : "0";
-        img.style.transform = e.isIntersecting ? "scale(1)" : "scale(1.14)";
+        img.style.transform = e.isIntersecting ? "scale(1.05)" : "scale(1.15)";
       });
     }, { root: scroller, threshold: 0.55 });
 
@@ -57,10 +57,10 @@
       if (!sec) return;
       io.observe(sec);
       sec.addEventListener("mouseenter", function () {
-        img.style.transform = "scale(0.965)";
+        img.style.transform = "scale(1)";
       });
       sec.addEventListener("mouseleave", function () {
-        img.style.transform = img.dataset.inview === "0" ? "scale(1.14)" : "scale(1)";
+        img.style.transform = img.dataset.inview === "0" ? "scale(1.15)" : "scale(1.05)";
       });
     });
   }

@@ -159,7 +159,7 @@ img { display: block; max-width: 100%; }
 .cat__img {
   position: absolute;
   inset: 0;
-  transform: scale(1.14);
+  transform: scale(1.15);
   transition: transform 1.2s var(--ease);
   will-change: transform;
 }
