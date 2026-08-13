@@ -153,7 +153,8 @@ img { display: block; max-width: 100%; }
   transition: fill .3s ease;
 }
 .nav__logo.is-in { opacity: 1; pointer-events: auto; }
-.nav__logo.is-in:hover { transform: scale(1.14); color: var(--accent); }
+.nav__logo.is-in:hover { transform: scale(1.14); }
+.nav__logo:hover { color: var(--white); }
 
 @media (prefers-reduced-motion: reduce) {
   .nav__logo { transition: opacity .2s ease; }
@@ -757,7 +758,6 @@ img { display: block; max-width: 100%; }
 /* on a project page the mark is simply present, it did not fly here */
 .nav__logo--static { opacity: 1; pointer-events: auto; }
 .nav__logo--static:hover { transform: scale(1.14); }
-.nav__logo--static:hover::after { opacity: 1; }
 
 .wp {
   max-width: 1180px;
