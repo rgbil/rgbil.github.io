@@ -9,7 +9,6 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --pad-x: clamp(44px, 8vw, 140px);
-  --tile-w: 34vw; /* wide slots: the photos get room instead of being sliced */
 }
 
 * { box-sizing: border-box; }
@@ -301,8 +300,10 @@ img { display: block; max-width: 100%; }
 }
 .tile {
   position: relative;
-  flex: 0 0 var(--tile-w);
+  /* full height as before; the width is whatever A4 portrait makes it */
+  flex: 0 0 auto;
   height: 100%;
+  aspect-ratio: 210 / 297;
   overflow: hidden;
   background: #0b0b0b;
 }
@@ -315,8 +316,6 @@ img { display: block; max-width: 100%; }
   user-select: none;
 }
 
-@media (max-width: 900px) { :root { --tile-w: 56vw; } }
-@media (max-width: 560px) { :root { --tile-w: 84vw; } }
 
 /* ---------- portfolio ---------- */
 .work {
