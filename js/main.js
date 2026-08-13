@@ -40,38 +40,79 @@
     });
   }
 
-  /* ---------- category images: zoom follows scroll position, extra on hover ---------- */
+  /* ---------- category screens: every layer moves off the same scroll position ---------- */
   function wireCategoryImages() {
     var scroller = document.querySelector(".snap");
     if (!scroller) return;
 
-    var FAR = 1.16;   /* scale while the section is away from centre */
-    var NEAR = 1.06;  /* scale once it is centred (stays > 1: no edge gaps) */
-    var HOVER = 0.95; /* inner layer, multiplies with the outer one */
+    var FAR = 1.16;    /* image scale while the screen is away from centre */
+    var NEAR = 1.06;   /* image scale once centred (stays > 1: no edge gaps) */
+    var HOVER = 0.95;  /* inner layer, multiplies with the outer one */
+    var LABEL_LAG = 46;  /* px the copy trails the scroll: the parallax depth */
+    var TITLE_LAG = 40;  /* the headline trails further still */
+    var VEIL = 0.6;      /* how far the screen sinks into black off-centre */
+    var FADE = 0.72;     /* share of a screen's travel the fade is spread over */
 
     var items = [];
     document.querySelectorAll("[data-catimg]").forEach(function (el) {
       var sec = el.closest("section");
-      if (sec) items.push({ sec: sec, layer: el, img: el.querySelector("img"), last: -1 });
+      if (!sec) return;
+      items.push({
+        sec: sec,
+        layer: el,
+        img: el.querySelector("img"),
+        veil: sec.querySelector("[data-catveil]"),
+        body: sec.querySelector(".cat__body"),
+        title: sec.querySelector(".cat__title"),
+        next: sec.querySelector(".cat__next"),
+        key: ""
+      });
     });
     if (!items.length) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     var lastScroll = 0;
 
+    function smoothstep(t) { return t * t * (3 - 2 * t); }
+
     function paint() {
       var vh = window.innerHeight || 1;
       var centre = vh / 2;
       items.forEach(function (it) {
         var r = it.sec.getBoundingClientRect();
-        if (r.bottom < -vh || r.top > vh * 2) return;
-        /* 0 when the section sits at the centre, 1 when it is a screen away */
-        var d = Math.min(1, Math.abs((r.top + r.height / 2) - centre) / vh);
-        var eased = d * d * (3 - 2 * d); /* smoothstep: softens both ends */
-        var s = Math.round((NEAR + (FAR - NEAR) * eased) * 1000) / 1000;
-        if (s === it.last) return;
-        it.last = s;
-        it.layer.style.transform = "scale(" + s + ") translateZ(0)";
+        if (r.bottom < -vh * 0.6 || r.top > vh * 1.6) return;
+
+        /* signed distance from centre: 0 centred, +1 a screen below, -1 above */
+        var p = ((r.top + r.height / 2) - centre) / vh;
+        if (p > 1) p = 1; else if (p < -1) p = -1;
+        var d = Math.abs(p);
+        var eased = smoothstep(d);
+
+        /* the copy lags behind the scroll, the headline more than the label,
+           so the screen reads as layers at different depths rather than one plane */
+        var shift = Math.round(p * LABEL_LAG * 10) / 10;
+        var titleShift = Math.round(p * TITLE_LAG * 10) / 10;
+
+        /* fade finishes before the screen is fully gone, so the copy is never
+           half-legible over the neighbouring image */
+        var f = Math.min(1, d / FADE);
+        var fade = Math.round((1 - smoothstep(f)) * 100) / 100;
+
+        var scale = Math.round((NEAR + (FAR - NEAR) * eased) * 1000) / 1000;
+        var veil = Math.round(eased * VEIL * 100) / 100;
+
+        var key = scale + "|" + shift + "|" + titleShift + "|" + fade + "|" + veil;
+        if (key === it.key) return;
+        it.key = key;
+
+        it.layer.style.transform = "scale(" + scale + ") translateZ(0)";
+        if (it.veil) it.veil.style.opacity = veil;
+        if (it.body) {
+          it.body.style.transform = "translate3d(0," + shift + "px,0)";
+          it.body.style.opacity = fade;
+        }
+        if (it.title) it.title.style.transform = "translate3d(0," + titleShift + "px,0)";
+        if (it.next) it.next.style.opacity = fade;
       });
     }
 

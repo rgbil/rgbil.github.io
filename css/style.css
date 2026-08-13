@@ -156,7 +156,18 @@ img { display: block; max-width: 100%; }
 .hero__scroll:hover { color: var(--accent); }
 
 /* ---------- category screens ---------- */
-.cat { overflow: hidden; }
+.cat {
+  overflow: hidden;
+  scroll-snap-stop: always; /* one flick moves exactly one category */
+}
+.cat__veil {
+  position: absolute;
+  inset: 0;
+  background: var(--black);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
 .cat__img {
   position: absolute;
   inset: 0;
@@ -192,6 +203,7 @@ img { display: block; max-width: 100%; }
   gap: 26px;
   padding: 0 var(--pad-x);
   pointer-events: none;
+  will-change: transform, opacity;
 }
 .cat__body .cta { pointer-events: auto; }
 .cat__title {
@@ -200,6 +212,7 @@ img { display: block; max-width: 100%; }
   font-weight: 400;
   letter-spacing: -.035em;
   line-height: .92;
+  will-change: transform;
 }
 .cat__next {
   position: absolute;
