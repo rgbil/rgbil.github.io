@@ -40,24 +40,97 @@
     });
   }
 
-  /* ---------- nav logo: arrives once the hero is behind you ---------- */
+  /* ---------- the logo travels from the hero into the nav ----------
+     Not a reveal: a copy of the hero mark is flown to the nav slot on a curve tied
+     to how far the hero has been scrolled, shrinking and tilting through the middle,
+     and handed over to the real nav logo once the two sit on the same pixels. */
   function wireNavLogo() {
-    var logo = document.querySelector(".nav__logo");
+    var navLogo = document.querySelector(".nav__logo");
+    var heroLogo = document.querySelector(".hero__logo");
     var hero = document.getElementById("home");
-    if (!logo || !hero) return;
-
     var scroller = document.querySelector(".snap");
+    if (!navLogo || !hero || !scroller) return;
 
-    function set(on) { logo.classList.toggle("is-in", on); }
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (!window.IntersectionObserver) { set(true); return; }
+    /* no travel without motion: fall back to appearing once the hero is behind you */
+    if (reduce || !heroLogo) {
+      if (!window.IntersectionObserver) { navLogo.classList.add("is-in"); return; }
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          navLogo.classList.toggle("is-in", !(e.isIntersecting && e.intersectionRatio >= 0.5));
+        });
+      }, { root: scroller, threshold: [0.5] }).observe(hero);
+      return;
+    }
 
-    /* half the hero still on screen means we are effectively still on it */
-    new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        set(!(e.isIntersecting && e.intersectionRatio >= 0.5));
-      });
-    }, { root: scroller, threshold: [0.5] }).observe(hero);
+    var ghost = document.createElement("img");
+    ghost.src = heroLogo.getAttribute("src");
+    ghost.alt = "";
+    ghost.className = "logo-ghost";
+    ghost.setAttribute("aria-hidden", "true");
+    document.body.appendChild(ghost);
+    heroLogo.style.opacity = "0"; /* the ghost is what you see from now on */
+
+    var hx = 0, hy = 0, hw = 1, k = 1, nx = 0, ny = 0;
+
+    function measure() {
+      var h = heroLogo.getBoundingClientRect();
+      hx = h.left;
+      hy = h.top + scroller.scrollTop; /* where it sits with the hero at rest */
+      hw = h.width || 1;
+      ghost.style.width = hw + "px";
+      ghost.style.height = h.height + "px";
+
+      navLogo.classList.add("is-measuring");
+      var n = navLogo.getBoundingClientRect();
+      navLogo.classList.remove("is-measuring");
+      nx = n.left;
+      ny = n.top;
+      k = (n.width || 1) / hw;
+    }
+
+    function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+    var HANDOVER = 0.88; /* the last stretch, where both marks coincide */
+
+    function paint() {
+      var vh = scroller.clientHeight || 1;
+      var y = scroller.scrollTop;
+      var p = Math.min(1, Math.max(0, y / vh));
+      var e = smoothstep(p);
+
+      /* the mark's untransformed position drifts up with the page; interpolate from
+         wherever that is towards the fixed nav slot, so it lands exactly on it */
+      var restY = hy - y;
+      var tx = hx + e * (nx - hx);
+      var ty = restY + e * (ny - restY);
+      var s = 1 + e * (k - 1);
+      var tilt = e * (1 - e) * 4 * 9; /* peaks mid-flight, flat at both ends */
+
+      ghost.style.transform =
+        "translate3d(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px,0) " +
+        "perspective(900px) rotateX(" + tilt.toFixed(2) + "deg) " +
+        "scale(" + s.toFixed(4) + ")";
+
+      var hand = e <= HANDOVER ? 0 : (e - HANDOVER) / (1 - HANDOVER);
+      ghost.style.opacity = 1 - hand;
+      navLogo.style.opacity = hand;
+      navLogo.classList.toggle("is-in", hand > 0.9);
+    }
+
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () { ticking = false; paint(); });
+    }
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", function () { measure(); paint(); });
+    window.addEventListener("load", function () { measure(); paint(); });
+    measure();
+    paint();
   }
 
   /* ---------- section travel ----------

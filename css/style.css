@@ -111,18 +111,30 @@ img { display: block; max-width: 100%; }
 }
 .nav__side--end { justify-content: flex-end; }
 
-/* Hidden on the hero, where the full mark already carries the screen; it drops in
-   once that screen is left behind. A real <img> paints the mark, so it shows even
-   where mask-image does not: the accent wash on top is the part that needs a mask. */
+/* The mark is not revealed here, it arrives: the hero logo shrinks along the scroll
+   and this is what it lands on. A real <img> paints it, so it shows even where
+   mask-image does not; the accent wash on top is the part that needs a mask. */
 .nav__logo {
   position: relative;
   display: block;
   width: 52px;
   height: 46px;
   opacity: 0;
-  transform: translateY(-10px) scale(.8);
   pointer-events: none;
-  transition: opacity .45s ease, transform .7s var(--ease);
+  transition: transform .5s var(--ease);
+}
+.nav__logo.is-measuring { transform: none !important; }
+/* the travelling copy: fixed, so it clears the nav instead of sliding under it,
+   and rendered at hero size then scaled down, so it stays sharp the whole way */
+.logo-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  transform-origin: top left;
+  pointer-events: none;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 .nav__logo img {
   display: block;
@@ -140,16 +152,13 @@ img { display: block; max-width: 100%; }
   opacity: 0;
   transition: opacity .3s ease;
 }
-.nav__logo.is-in {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
-}
-.nav__logo.is-in:hover { transform: translateY(0) scale(1.14); }
+.nav__logo.is-in { opacity: 1; pointer-events: auto; }
+.nav__logo.is-in:hover { transform: scale(1.14); }
 .nav__logo.is-in:hover::after { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav__logo { transition: opacity .2s ease; transform: none; }
+  .nav__logo { transition: opacity .2s ease; }
+  .logo-ghost { display: none; }
 }
 
 /* ---------- hero ---------- */
