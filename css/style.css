@@ -747,3 +747,141 @@ img { display: block; max-width: 100%; }
   .cat__veil { opacity: 0 !important; }
   .fx { display: none; }
 }
+
+/* ---------- project pages ----------
+   A normal document, not the snap scroller: these are meant to be read. */
+.page { background: var(--black); }
+.nav--page { background: linear-gradient(to bottom, rgba(0,0,0,.92), rgba(0,0,0,0)); }
+.nav__back {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+/* on a project page the mark is simply present, it did not fly here */
+.nav__logo--static { opacity: 1; pointer-events: auto; }
+.nav__logo--static:hover { transform: scale(1.14); }
+.nav__logo--static:hover::after { opacity: 1; }
+
+.wp {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(120px, 16vh, 190px) var(--pad-x) 60px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(38px, 6vh, 70px);
+}
+.wp__head { display: flex; flex-direction: column; gap: 18px; }
+.wp__title {
+  margin: 0;
+  font-size: clamp(38px, 7vw, 96px);
+  font-weight: 400;
+  letter-spacing: -.035em;
+  line-height: .95;
+}
+.wp__intro {
+  margin: 0;
+  max-width: 62ch;
+  font-size: clamp(17px, 1.6vw, 22px);
+  font-weight: 300;
+  line-height: 1.55;
+  color: #d6d6d6;
+  text-wrap: pretty;
+}
+.wp__cover {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0b0b0b;
+  /* the grid tile morphs into this one across the navigation */
+  view-transition-name: work-cover;
+}
+.wp__cover img, .wp__gallery img { width: 100%; height: auto; }
+
+.wp__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 26px;
+  margin: 0;
+  padding: 26px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.wp__meta dt {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+.wp__meta dd { margin: 0; font-size: 15px; font-weight: 300; }
+
+.wp__body {
+  max-width: 68ch;
+  font-size: clamp(15px, 1.3vw, 17px);
+  font-weight: 300;
+  line-height: 1.75;
+  color: #c9c9c9;
+}
+.wp__body p { margin: 0 0 1.2em; text-wrap: pretty; }
+
+.wp__gallery { display: flex; flex-direction: column; gap: clamp(18px, 3vh, 34px); }
+.wp__gallery figure {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0b0b0b;
+}
+.wp__cta { align-self: flex-start; }
+
+.wp__next {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 34px;
+  border-top: 1px solid var(--line);
+}
+.wp__next-title {
+  font-size: clamp(28px, 4.5vw, 54px);
+  font-weight: 300;
+  letter-spacing: -.03em;
+}
+
+.wp__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 30px var(--pad-x) 40px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.wp__foot-mail { font-size: 15px; letter-spacing: .04em; text-transform: none; color: var(--white); }
+.wp__foot-side { display: flex; gap: 24px; }
+
+/* ---------- cross-document view transitions ----------
+   Browsers without support simply navigate; nothing here is load-bearing. */
+@view-transition { navigation: auto; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: .42s;
+  animation-timing-function: var(--ease);
+}
+/* the cover carries its own pace: slower, so the morph reads as the subject moving */
+::view-transition-group(work-cover) {
+  animation-duration: .62s;
+  animation-timing-function: var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+}

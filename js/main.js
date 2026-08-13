@@ -21,8 +21,12 @@
              '</picture>';
     }
 
+    /* the card leads to our own page for the project, not off to Behance */
     grid.innerHTML = window.WORKS.map(function (w) {
-      return '<a class="card" href="' + w.href + '" target="_blank" rel="noopener">' +
+      var url = w.url || w.href;
+      var external = !w.url;
+      return '<a class="card" href="' + url + '" data-url="' + url + '"' +
+               (external ? ' target="_blank" rel="noopener"' : '') + '>' +
                '<div class="card__media">' + media(w) + '</div>' +
                '<div class="card__meta"><span>' + w.title + '</span>' +
                '<span class="card__cat">' + w.category + '</span></div>' +
@@ -51,6 +55,41 @@
           });
         });
       });
+    });
+  }
+
+
+  /* ---------- work cover morph ----------
+     A cross-document view transition can only pair two elements if they carry the
+     same view-transition-name at snapshot time. The project page names its cover
+     statically; here the name is moved onto whichever tile is involved, on the way
+     out and again on the way back. Unsupported browsers just navigate. */
+  function wireWorkTransitions() {
+    var grid = document.getElementById("work-grid");
+    if (!grid || !("startViewTransition" in document)) return;
+
+    var KEY = "rgbil:from";
+
+    function tag(card) {
+      grid.querySelectorAll(".card__media").forEach(function (m) {
+        m.style.viewTransitionName = "";
+      });
+      var media = card && card.querySelector(".card__media");
+      if (media) media.style.viewTransitionName = "work-cover";
+    }
+
+    grid.addEventListener("click", function (e) {
+      var card = e.target.closest && e.target.closest(".card");
+      if (!card || card.target === "_blank") return;
+      tag(card);
+      try { sessionStorage.setItem(KEY, card.dataset.url || ""); } catch (err) { /* private mode */ }
+    });
+
+    window.addEventListener("pagereveal", function () {
+      var from = "";
+      try { from = sessionStorage.getItem(KEY) || ""; } catch (err) { return; }
+      if (!from) return;
+      tag(grid.querySelector('.card[data-url="' + from + '"]'));
     });
   }
 
@@ -874,6 +913,7 @@
   }
 
   buildGrid();
+  wireWorkTransitions();
   wireHoverGroups();
   addGrain();
   wireCursor();
