@@ -7,9 +7,23 @@
   function buildGrid() {
     var grid = document.getElementById("work-grid");
     if (!grid || !window.WORKS) return;
+    var SIZES = "(max-width: 560px) 92vw, (max-width: 900px) 46vw, 30vw";
+
+    function media(w) {
+      var img = '<img src="' + w.img + '" alt="' + w.title + '" loading="lazy" ' +
+                'decoding="async" sizes="' + SIZES + '"' +
+                (w.w ? ' width="' + w.w + '" height="' + w.h + '"' : '') + ' />';
+      if (!w.avif) return img;
+      return '<picture>' +
+               '<source type="image/avif" srcset="' + w.avif + '" sizes="' + SIZES + '">' +
+               '<source type="image/webp" srcset="' + w.webp + '" sizes="' + SIZES + '">' +
+               img +
+             '</picture>';
+    }
+
     grid.innerHTML = window.WORKS.map(function (w) {
       return '<a class="card" href="' + w.href + '" target="_blank" rel="noopener">' +
-               '<div class="card__media"><img src="' + w.img + '" alt="' + w.title + '" loading="lazy" /></div>' +
+               '<div class="card__media">' + media(w) + '</div>' +
                '<div class="card__meta"><span>' + w.title + '</span>' +
                '<span class="card__cat">' + w.category + '</span></div>' +
              '</a>';
@@ -644,19 +658,19 @@
 
     var rows = strips.map(function (el, i) {
       var sec = el.closest("section");
-      /* the photos are whatever the markup lists: no links, nothing to click through */
-      var srcs = Array.prototype.map.call(el.querySelectorAll("img"), function (im) {
-        return im.getAttribute("src");
+      /* the photos are whatever the markup lists: no links, nothing to click through.
+         Each source is cloned whole, so the <picture> element the build emits keeps
+         its AVIF and WebP ladders instead of being flattened back to one src. */
+      var srcs = Array.prototype.map.call(el.children, function (node) {
+        return node.outerHTML;
       });
       if (!srcs.length) return null;
 
       var copies = copiesFor(srcs.length);
       var html = "";
       for (var c = 0; c < copies; c++) {
-        html += srcs.map(function (src) {
-          return '<div class="tile" aria-hidden="true">' +
-                   '<img src="' + src + '" alt="" draggable="false" />' +
-                 '</div>';
+        html += srcs.map(function (node) {
+          return '<div class="tile" aria-hidden="true">' + node + "</div>";
         }).join("");
       }
       el.innerHTML = '<div class="strip__track">' + html + "</div>";

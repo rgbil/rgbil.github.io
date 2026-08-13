@@ -1,0 +1,346 @@
+{
+  "img/cat-branding.png": {
+    "w": 1800,
+    "h": 1200,
+    "avif": [
+      [
+        480,
+        "img/opt/cat-branding-480.avif"
+      ],
+      [
+        768,
+        "img/opt/cat-branding-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/cat-branding-1080.avif"
+      ],
+      [
+        1440,
+        "img/opt/cat-branding-1440.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/cat-branding-480.webp"
+      ],
+      [
+        768,
+        "img/opt/cat-branding-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/cat-branding-1080.webp"
+      ],
+      [
+        1440,
+        "img/opt/cat-branding-1440.webp"
+      ]
+    ]
+  },
+  "img/cat-covers.png": {
+    "w": 1800,
+    "h": 1200,
+    "avif": [
+      [
+        480,
+        "img/opt/cat-covers-480.avif"
+      ],
+      [
+        768,
+        "img/opt/cat-covers-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/cat-covers-1080.avif"
+      ],
+      [
+        1440,
+        "img/opt/cat-covers-1440.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/cat-covers-480.webp"
+      ],
+      [
+        768,
+        "img/opt/cat-covers-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/cat-covers-1080.webp"
+      ],
+      [
+        1440,
+        "img/opt/cat-covers-1440.webp"
+      ]
+    ]
+  },
+  "img/cat-packaging.png": {
+    "w": 1800,
+    "h": 1200,
+    "avif": [
+      [
+        480,
+        "img/opt/cat-packaging-480.avif"
+      ],
+      [
+        768,
+        "img/opt/cat-packaging-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/cat-packaging-1080.avif"
+      ],
+      [
+        1440,
+        "img/opt/cat-packaging-1440.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/cat-packaging-480.webp"
+      ],
+      [
+        768,
+        "img/opt/cat-packaging-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/cat-packaging-1080.webp"
+      ],
+      [
+        1440,
+        "img/opt/cat-packaging-1440.webp"
+      ]
+    ]
+  },
+  "img/portrait.png": {
+    "w": 1100,
+    "h": 1375,
+    "avif": [
+      [
+        480,
+        "img/opt/portrait-480.avif"
+      ],
+      [
+        768,
+        "img/opt/portrait-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/portrait-1080.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/portrait-480.webp"
+      ],
+      [
+        768,
+        "img/opt/portrait-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/portrait-1080.webp"
+      ]
+    ]
+  },
+  "img/work-1.png": {
+    "w": 1200,
+    "h": 900,
+    "avif": [
+      [
+        480,
+        "img/opt/work-1-480.avif"
+      ],
+      [
+        768,
+        "img/opt/work-1-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/work-1-1080.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/work-1-480.webp"
+      ],
+      [
+        768,
+        "img/opt/work-1-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/work-1-1080.webp"
+      ]
+    ]
+  },
+  "img/work-2.png": {
+    "w": 1200,
+    "h": 900,
+    "avif": [
+      [
+        480,
+        "img/opt/work-2-480.avif"
+      ],
+      [
+        768,
+        "img/opt/work-2-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/work-2-1080.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/work-2-480.webp"
+      ],
+      [
+        768,
+        "img/opt/work-2-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/work-2-1080.webp"
+      ]
+    ]
+  },
+  "img/work-3.png": {
+    "w": 1200,
+    "h": 900,
+    "avif": [
+      [
+        480,
+        "img/opt/work-3-480.avif"
+      ],
+      [
+        768,
+        "img/opt/work-3-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/work-3-1080.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/work-3-480.webp"
+      ],
+      [
+        768,
+        "img/opt/work-3-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/work-3-1080.webp"
+      ]
+    ]
+  },
+  "img/work-4.png": {
+    "w": 1200,
+    "h": 900,
+    "avif": [
+      [
+        480,
+        "img/opt/work-4-480.avif"
+      ],
+      [
+        768,
+        "img/opt/work-4-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/work-4-1080.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/work-4-480.webp"
+      ],
+      [
+        768,
+        "img/opt/work-4-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/work-4-1080.webp"
+      ]
+    ]
+  },
+  "img/work-5.png": {
+    "w": 1200,
+    "h": 900,
+    "avif": [
+      [
+        480,
+        "img/opt/work-5-480.avif"
+      ],
+      [
+        768,
+        "img/opt/work-5-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/work-5-1080.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/work-5-480.webp"
+      ],
+      [
+        768,
+        "img/opt/work-5-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/work-5-1080.webp"
+      ]
+    ]
+  },
+  "img/work-6.png": {
+    "w": 1200,
+    "h": 900,
+    "avif": [
+      [
+        480,
+        "img/opt/work-6-480.avif"
+      ],
+      [
+        768,
+        "img/opt/work-6-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/work-6-1080.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/work-6-480.webp"
+      ],
+      [
+        768,
+        "img/opt/work-6-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/work-6-1080.webp"
+      ]
+    ]
+  }
+}
