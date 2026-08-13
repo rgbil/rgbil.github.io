@@ -9,12 +9,10 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --pad-x: clamp(44px, 8vw, 140px);
-  /* A4 slot width: whichever runs out first, the screen's width or its height.
-     70.71vh is the width of an A4 that stands full height, so on wide screens the
-     height binds and the band fills the screen; on narrow ones the width binds and
-     the band shortens instead of spilling past the edges. Either way the reader
-     sees the same slice of the strip. */
-  --slot-w: min(72vw, 70.71vh);
+  /* An A4 sheet standing at full screen height: 100 / root two. The band fills the
+     screen on every device; on narrow ones the sheet is simply wider than the glass,
+     so a phone frames one poster at a time instead of shrinking the whole strip. */
+  --slot-w: 70.71vh;
 }
 
 * { box-sizing: border-box; }
@@ -201,6 +199,12 @@ img { display: block; max-width: 100%; }
   align-items: center;
   justify-content: center;
   gap: 7px;
+}
+.burger:focus { outline: none; }
+.burger:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 .burger__bar {
   display: block;
