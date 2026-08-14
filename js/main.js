@@ -142,6 +142,18 @@
     document.body.appendChild(g);
   }
 
+  /* ---------- sideways gestures belong to the page ----------
+     A trackpad swipe left or right is a back/forward gesture by default, and the
+     browser decides that at the very start of the movement. Nothing here scrolls
+     sideways except the strips, which handle it themselves, so the gesture is refused
+     document-wide rather than per element. */
+  function blockHistoryGestures() {
+    document.addEventListener("wheel", function (e) {
+      if (e.ctrlKey) return; /* pinch zoom */
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault();
+    }, { passive: false });
+  }
+
   /* ---------- mobile menu ---------- */
   function wireMenu() {
     var burger = document.querySelector(".burger");
@@ -577,8 +589,11 @@
     var scroller = document.querySelector(".snap");
     if (!scroller) return;
 
-    var FAR = 1.16;    /* band scale while the screen is away from centre */
-    var NEAR = 1.06;   /* band scale once centred (stays > 1: no edge gaps) */
+    /* Anchored at 1: centred means the picture is shown whole, and every other position
+       is larger, never smaller. Below 1 would open blank bars while a screen passes;
+       above 1 at rest would shave the top and bottom of what you are looking at. */
+    var FAR = 1.1;     /* band scale while the screen is away from centre */
+    var NEAR = 1.0;    /* band scale once centred: nothing cropped */
     var LABEL_LAG = 46;  /* px the copy trails the scroll: the parallax depth */
     var TITLE_LAG = 40;  /* the headline trails further still */
     var VEIL = 0.6;      /* how far the screen sinks into black off-centre */
@@ -946,6 +961,7 @@
     })();
   }
 
+  blockHistoryGestures();
   buildGrid();
   wireWorkTransitions();
   wireHoverGroups();
