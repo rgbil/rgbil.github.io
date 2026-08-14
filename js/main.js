@@ -822,7 +822,7 @@
         else if (e.deltaMode === 2) dx *= window.innerWidth; /* pages */
         e.preventDefault();
         e.stopPropagation(); /* or the page would read shift+wheel as its own scroll */
-        r.push -= dx * 14;
+        r.push -= dx * 8.5;
         if (r.push > MAX_PUSH) r.push = MAX_PUSH;
         else if (r.push < -MAX_PUSH) r.push = -MAX_PUSH;
       }, { passive: false });
@@ -859,7 +859,7 @@
         } else {
           r.x += (DRIFT * r.dir + vel * PUSH * r.dir + r.push) * dt;
           /* a long coast, so a flick reads as weight rather than a nudge */
-          r.push *= Math.pow(0.962, dt * 60);
+          r.push *= Math.pow(0.971, dt * 60);
           if (Math.abs(r.push) < 2) r.push = 0;
         }
 

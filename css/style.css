@@ -17,6 +17,9 @@ html, body {
   margin: 0;
   padding: 0;
   background: var(--black);
+  /* A sideways gesture belongs to the strips, never to the browser's history: without
+     this a trackpad swipe over a category navigates back off the site. */
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -55,6 +58,7 @@ img { display: block; max-width: 100%; }
   overflow-x: hidden;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
+  overscroll-behavior: contain;
 }
 .snap::-webkit-scrollbar { display: none; }
 
