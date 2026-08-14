@@ -592,7 +592,7 @@
         sec: sec,
         layer: el,
         veil: sec.querySelector("[data-catveil]"),
-        body: sec.querySelector(".cat__body"),
+        label: sec.querySelector(".cat__label"),
         title: sec.querySelector(".cat__title"),
         next: sec.querySelector(".cat__next"),
         key: ""
@@ -649,11 +649,17 @@
 
         it.layer.style.transform = "scale(" + scale + ") translateZ(0)";
         if (it.veil) it.veil.style.opacity = veil;
-        if (it.body) {
-          it.body.style.transform = "translate3d(0," + shift + "px,0)";
-          it.body.style.opacity = fade;
+        /* Driven per line rather than on the block: a transform or an opacity on the
+           parent would isolate blending inside it, and the label could not invert
+           against the photograph at all. */
+        if (it.label) {
+          it.label.style.transform = "translate3d(0," + shift + "px,0)";
+          it.label.style.opacity = fade;
         }
-        if (it.title) it.title.style.transform = "translate3d(0," + titleShift + "px,0)";
+        if (it.title) {
+          it.title.style.transform = "translate3d(0," + (shift + titleShift) + "px,0)";
+          it.title.style.opacity = fade;
+        }
         if (it.next) it.next.style.opacity = fade;
       });
     }
