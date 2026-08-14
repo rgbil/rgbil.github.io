@@ -468,6 +468,11 @@ img { display: block; max-width: 100%; }
 }
 .cat__body {
   position: relative;
+  /* Inverts against whatever is behind it, so the copy can never sink into a light
+     photograph. Applied to the block, not to the words: the parallax puts a transform
+     on this element, and a transform isolates blending inside it, so a mix-blend-mode
+     on the children would have nothing left to blend against and would render flat. */
+  mix-blend-mode: difference;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -504,10 +509,7 @@ img { display: block; max-width: 100%; }
 .cat__next svg {
   animation: drift 3.6s cubic-bezier(.45, 0, .25, 1) infinite;
 }
-.cat__next:hover {
-  color: var(--accent);
-  mix-blend-mode: normal;
-}
+.cat__next:hover { opacity: .55; } /* stays inverted: the response is weight, not colour */
 /* falls and fades out, then re-enters from above: no snap back */
 @keyframes drift {
   0%   { transform: translateY(-5px); opacity: 0; }
