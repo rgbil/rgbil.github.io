@@ -106,16 +106,8 @@
     var cur = document.createElement("div");
     cur.className = "cursor is-out";
     cur.setAttribute("aria-hidden", "true");
-    /* every shape twice: the greyscale copy under the inverting one */
-    cur.innerHTML = ["ring", "dot", "tag"].map(function (shape) {
-      return '<span class="cursor__grey cursor__' + shape + '"></span>' +
-             '<span class="cursor__ink cursor__' + shape + '"></span>';
-    }).join("");
+    cur.innerHTML = '<span class="cursor__dot"></span><span class="cursor__tag">DRAG</span>';
     document.body.appendChild(cur);
-
-    /* moved individually: a transform on their container would isolate the blending
-       and the whole thing would draw as flat white */
-    var parts = Array.prototype.slice.call(cur.children);
 
     var tx = window.innerWidth / 2, ty = window.innerHeight / 2;
     var x = tx, y = ty;
@@ -141,8 +133,7 @@
     (function follow() {
       x += (tx - x) * 0.19;
       y += (ty - y) * 0.19;
-      var tf = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) translate(-50%,-50%)";
-      for (var i = 0; i < parts.length; i++) parts[i].style.transform = tf;
+      cur.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0)";
       requestAnimationFrame(follow);
     })();
   }
