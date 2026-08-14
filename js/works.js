@@ -14,11 +14,11 @@ window.WORKS = [
   },
   {
     "id": 2,
-    "title": "National Theater Of Greece & Show (Rebranding)",
+    "title": "National Theater Of Greece & Show",
     "category": "Rebranding",
     "img": "img/national-theater-cover.png",
     "href": "https://www.behance.net/gallery/254280911/National-Theater-Of-Greece-Show-(Rebranding)",
-    "alt": "National Theater Of Greece & Show (Rebranding) — rebranding",
+    "alt": "National Theater Of Greece & Show — rebranding",
     "avif": "img/opt/national-theater-cover-480.avif 480w, img/opt/national-theater-cover-768.avif 768w, img/opt/national-theater-cover-1080.avif 1080w, img/opt/national-theater-cover-1440.avif 1440w, img/opt/national-theater-cover-1920.avif 1920w",
     "webp": "img/opt/national-theater-cover-480.webp 480w, img/opt/national-theater-cover-768.webp 768w, img/opt/national-theater-cover-1080.webp 1080w, img/opt/national-theater-cover-1440.webp 1440w, img/opt/national-theater-cover-1920.webp 1920w",
     "w": 5834,
