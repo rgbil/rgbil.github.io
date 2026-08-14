@@ -637,13 +637,21 @@ img { display: block; max-width: 100%; }
 .about__portrait {
   position: relative;
   aspect-ratio: 4 / 5;
-  max-height: 70vh;
   width: 100%;
-  justify-self: end;
+  /* Capping the height instead would leave a box wider than 4:5, and cover would
+     take the difference off the top and bottom: the head. Capping the width keeps
+     the frame at the ratio the photograph is cut to, so nothing is lost. */
+  max-width: calc(70vh * 4 / 5);
+  justify-self: start;
   background: #0b0b0b;
   overflow: hidden;
 }
-.about__portrait img { width: 100%; height: 100%; object-fit: cover; }
+.about__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top; /* if anything ever has to go, it goes from the feet */
+}
 
 /* ---------- contact ---------- */
 .contact {
@@ -729,7 +737,7 @@ img { display: block; max-width: 100%; }
   .nav__side { gap: 20px; font-size: 10px; }
   .grid { grid-template-columns: repeat(2, 1fr); }
   .about { grid-template-columns: 1fr; }
-  .about__portrait { justify-self: stretch; max-height: 50vh; }
+  .about__portrait { justify-self: center; max-width: calc(50vh * 4 / 5); }
 }
 
 @media (max-width: 560px) {
