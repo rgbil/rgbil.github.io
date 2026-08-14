@@ -435,31 +435,51 @@
       return pts;
     }
 
-    /* How close to a screen you must already be for it to claim you. A screen is one
-       viewport tall, so anything up to half a screen away has a nearest edge: pulling
-       from that far means every single stop gets corrected, which is what makes the
-       page feel like it is arguing with you. A quarter leaves the middle ground free. */
-    var SNAP_ZONE = 0.25;
+    /* ---- when a screen is allowed to claim you ----
+       Snapping from wherever you stopped treats every pause as a mistake, which is
+       what makes it feel strict. Instead the gesture is projected forward by its own
+       speed and the question is where it was *heading*: a decisive flick completes,
+       a small nudge is left alone. Nothing is ever pulled more than one screen. */
+    var PROJECT = 0.18;    /* seconds of travel a throw is credited with */
+    var CALM_ZONE = 0.18;  /* screens: how near a standstill has to be to be claimed */
+    var FLICK_ZONE = 0.27; /* screens: extra reach a fast gesture earns */
+    var REACH = 1.05;      /* screens: never haul someone past their neighbour */
 
-    /* the rest point worth going to from y, or null to leave the reader alone */
-    function nearestRest(y) {
-      var max = main.scrollHeight - vh();
+    var scrollV = 0;       /* px/s, smoothed */
+    var touching = false;
+    var lastResize = 0;
+
+    function restFor(y, v) {
+      var h = vh();
+      var max = main.scrollHeight - h;
       if (y <= 1 || y >= max - 1) return null;
+
+      var aim = y + v * PROJECT;
+
+      /* The window widens with speed. Stopped still, only a screen you are nearly on
+         may claim you, so a deliberate pause is respected. Thrown hard, the window
+         opens and the movement completes, because that is plainly what was meant. */
+      var zone = h * (CALM_ZONE + Math.min(FLICK_ZONE, Math.abs(v) / (h * 5)));
 
       var best = null, bestD = Infinity;
       restPoints().forEach(function (pt) {
-        var d = Math.abs(pt - y);
+        if (Math.abs(pt - y) > h * REACH) return;
+        var d = Math.abs(pt - aim);
         if (d < bestD) { bestD = d; best = pt; }
       });
-      if (best === null || bestD < 2 || bestD > vh() * SNAP_ZONE) return null;
+      if (best === null || Math.abs(best - y) < 3 || bestD > zone) return null;
       return best;
     }
 
     /* the touch path has no chase to fold into, so it lands on its own glide,
        timed to sit in the same weight class as the wheel */
     function settle() {
-      if (animating || coasting) return;
-      var pt = nearestRest(main.scrollTop);
+      if (animating || coasting || touching) return;
+      /* a phone hiding its address bar resizes every screen: the rest points move
+         underneath us, and settling on them then reads as the page moving by itself */
+      if (Date.now() - lastResize < 400) return;
+
+      var pt = restFor(main.scrollTop, scrollV);
       if (pt === null) return;
       var d = Math.abs(pt - main.scrollTop);
       glideY(pt, Math.min(880, 400 + (d / vh()) * 620));
@@ -474,11 +494,25 @@
 
     /* the wheel and the finger are never intercepted; we only take over once the
        scroll has been still for a moment, which is also after touch momentum ends */
+    var vY = main.scrollTop, vT = performance.now();
+
     main.addEventListener("scroll", function () {
+      var now = performance.now();
+      var y = main.scrollTop;
+      var dt = Math.max(8, now - vT) / 1000;
+      scrollV += (((y - vY) / dt) - scrollV) * 0.35;
+      vY = y; vT = now;
+
       if (animating || coasting) return; /* the chase lands itself */
       clearTimeout(idle);
-      idle = setTimeout(settle, 140);
+      /* momentum on a phone stutters before it stops; waiting longer keeps the settle
+         from firing into a gesture that has not actually finished */
+      idle = setTimeout(settle, touching ? 260 : 160);
     }, { passive: true });
+
+    main.addEventListener("touchend", function () { touching = false; }, { passive: true });
+    main.addEventListener("touchcancel", function () { touching = false; }, { passive: true });
+    window.addEventListener("resize", function () { lastResize = Date.now(); });
 
     /* ---- weighted wheel ----
        The wheel no longer writes the scroll position, it writes a target the page
@@ -535,7 +569,7 @@
            page is already chasing: the snap is the same motion finishing, not a
            second animation with its own curve stapled onto the end */
         if (!aimed && now - lastWheelAt > QUIET) {
-          var rest = nearestRest(current);
+          var rest = restFor(current, (target - current) * GRIP * 60);
           if (rest !== null) target = rest;
           aimed = true;
         }
@@ -556,6 +590,7 @@
     })(lastFrame);
     /* a finger owns the scroll outright: drop both the glide and the wheel chase */
     main.addEventListener("touchstart", function () {
+      touching = true;
       coasting = false;
       if (!animating) return;
       cancelAnimationFrame(raf);
