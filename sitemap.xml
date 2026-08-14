@@ -2,44 +2,8 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://rgbil.com/</loc>
-    <lastmod>2026-08-13</lastmod>
+    <lastmod>2026-08-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://rgbil.com/work/kyma-coffee-roasters/</loc>
-    <lastmod>2026-08-13</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rgbil.com/work/meraki-studio/</loc>
-    <lastmod>2026-08-13</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rgbil.com/work/elaia-olive-oil/</loc>
-    <lastmod>2026-08-13</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rgbil.com/work/anthos-botanicals/</loc>
-    <lastmod>2026-08-13</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rgbil.com/work/nocturne-editions/</loc>
-    <lastmod>2026-08-13</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rgbil.com/work/athens-type-week/</loc>
-    <lastmod>2026-08-13</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.8</priority>
   </url>
 </urlset>
