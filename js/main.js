@@ -22,6 +22,11 @@
     }
 
     /* the card leads to our own page for the project, not off to Behance */
+    /* A row that ends in a single orphan reads as a mistake; these counts avoid it. */
+    var n = window.WORKS.length;
+    grid.style.setProperty("--cols",
+      n <= 2 ? n : (n === 4 ? 2 : (n <= 6 ? 3 : (n % 4 === 0 ? 4 : 3))));
+
     grid.innerHTML = window.WORKS.map(function (w) {
       var url = w.url || w.href;
       var external = !w.url;

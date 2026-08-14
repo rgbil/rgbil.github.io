@@ -143,6 +143,54 @@
       ]
     ]
   },
+  "img/archaid-cover.png": {
+    "w": 5834,
+    "h": 4500,
+    "avif": [
+      [
+        480,
+        "img/opt/archaid-cover-480.avif"
+      ],
+      [
+        768,
+        "img/opt/archaid-cover-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/archaid-cover-1080.avif"
+      ],
+      [
+        1440,
+        "img/opt/archaid-cover-1440.avif"
+      ],
+      [
+        1920,
+        "img/opt/archaid-cover-1920.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/archaid-cover-480.webp"
+      ],
+      [
+        768,
+        "img/opt/archaid-cover-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/archaid-cover-1080.webp"
+      ],
+      [
+        1440,
+        "img/opt/archaid-cover-1440.webp"
+      ],
+      [
+        1920,
+        "img/opt/archaid-cover-1920.webp"
+      ]
+    ]
+  },
   "img/archaid-logo.png": {
     "w": 3508,
     "h": 2481,
@@ -791,6 +839,54 @@
       ]
     ]
   },
+  "img/el-gato-cover.png": {
+    "w": 5834,
+    "h": 4500,
+    "avif": [
+      [
+        480,
+        "img/opt/el-gato-cover-480.avif"
+      ],
+      [
+        768,
+        "img/opt/el-gato-cover-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/el-gato-cover-1080.avif"
+      ],
+      [
+        1440,
+        "img/opt/el-gato-cover-1440.avif"
+      ],
+      [
+        1920,
+        "img/opt/el-gato-cover-1920.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/el-gato-cover-480.webp"
+      ],
+      [
+        768,
+        "img/opt/el-gato-cover-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/el-gato-cover-1080.webp"
+      ],
+      [
+        1440,
+        "img/opt/el-gato-cover-1440.webp"
+      ],
+      [
+        1920,
+        "img/opt/el-gato-cover-1920.webp"
+      ]
+    ]
+  },
   "img/el-gato-logo.png": {
     "w": 3508,
     "h": 2481,
@@ -1143,6 +1239,54 @@
       ]
     ]
   },
+  "img/national-theater-cover.png": {
+    "w": 5834,
+    "h": 4500,
+    "avif": [
+      [
+        480,
+        "img/opt/national-theater-cover-480.avif"
+      ],
+      [
+        768,
+        "img/opt/national-theater-cover-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/national-theater-cover-1080.avif"
+      ],
+      [
+        1440,
+        "img/opt/national-theater-cover-1440.avif"
+      ],
+      [
+        1920,
+        "img/opt/national-theater-cover-1920.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/national-theater-cover-480.webp"
+      ],
+      [
+        768,
+        "img/opt/national-theater-cover-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/national-theater-cover-1080.webp"
+      ],
+      [
+        1440,
+        "img/opt/national-theater-cover-1440.webp"
+      ],
+      [
+        1920,
+        "img/opt/national-theater-cover-1920.webp"
+      ]
+    ]
+  },
   "img/national-theater-logo.png": {
     "w": 3508,
     "h": 2481,
@@ -1188,6 +1332,54 @@
       [
         1920,
         "img/opt/national-theater-logo-1920.webp"
+      ]
+    ]
+  },
+  "img/noi-cover.png": {
+    "w": 5834,
+    "h": 4500,
+    "avif": [
+      [
+        480,
+        "img/opt/noi-cover-480.avif"
+      ],
+      [
+        768,
+        "img/opt/noi-cover-768.avif"
+      ],
+      [
+        1080,
+        "img/opt/noi-cover-1080.avif"
+      ],
+      [
+        1440,
+        "img/opt/noi-cover-1440.avif"
+      ],
+      [
+        1920,
+        "img/opt/noi-cover-1920.avif"
+      ]
+    ],
+    "webp": [
+      [
+        480,
+        "img/opt/noi-cover-480.webp"
+      ],
+      [
+        768,
+        "img/opt/noi-cover-768.webp"
+      ],
+      [
+        1080,
+        "img/opt/noi-cover-1080.webp"
+      ],
+      [
+        1440,
+        "img/opt/noi-cover-1440.webp"
+      ],
+      [
+        1920,
+        "img/opt/noi-cover-1920.webp"
       ]
     ]
   },
