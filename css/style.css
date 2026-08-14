@@ -9,10 +9,6 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --pad-x: clamp(44px, 8vw, 140px);
-  /* An A4 sheet standing at full screen height: 100 / root two. The band fills the
-     screen on every device; on narrow ones the sheet is simply wider than the glass,
-     so a phone frames one poster at a time instead of shrinking the whole strip. */
-  --slot-w: 70.71vh;
 }
 
 * { box-sizing: border-box; }
@@ -549,23 +545,24 @@ img { display: block; max-width: 100%; }
 .cat__strip > :first-child ~ * { display: none; }
 .strip__track {
   display: flex;
-  height: calc(var(--slot-w) * 1.4142); /* A4: the long side is width x root two */
+  height: 100%;
   will-change: transform;
 }
+/* One height for every slot, the screen's own. The width is whatever each picture's
+   proportions make it, so nothing is cropped and a wide piece is allowed to be wide. */
 .tile {
   position: relative;
-  flex: 0 0 var(--slot-w);
+  flex: 0 0 auto;
   height: 100%;
-  overflow: hidden;
+  width: auto;
   background: #0b0b0b;
 }
-.tile picture { display: block; width: 100%; height: 100%; }
+.tile picture { display: block; height: 100%; }
 .tile img {
-  width: 100%;
+  display: block;
   height: 100%;
-  object-fit: cover;
-  /* a hair over full size: the lean must never expose an edge */
-  transform: scale(1.03);
+  width: auto;
+  max-width: none; /* the global img rule would otherwise squeeze it into the flex line */
   user-select: none;
 }
 
