@@ -695,9 +695,11 @@
        category with one or two photos would leave the far side of a wide screen empty
        after a wrap, so the count is derived from the actual width instead of assumed. */
     function copiesFor(n) {
-      var slot = window.innerHeight * 0.7071; /* an A4 at full height */
+      var slot = window.innerHeight * 0.7071; /* a conservative guess: A4 at full height */
       var set = Math.max(1, n) * slot;
-      return Math.max(3, Math.ceil((2 * window.innerWidth) / set) + 1);
+      /* two is enough as soon as one set already outruns the screen, which is what
+         keeps a thirteen-piece category from building forty tiles it never shows */
+      return Math.max(2, Math.ceil((2 * window.innerWidth) / set) + 1);
     }
     var DRIFT = 22;      /* px/s the row moves when nothing else is happening */
     var PUSH = 0.85;     /* how hard vertical scroll velocity shoves it sideways */
