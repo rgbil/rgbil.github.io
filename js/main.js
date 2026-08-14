@@ -577,11 +577,8 @@
     var scroller = document.querySelector(".snap");
     if (!scroller) return;
 
-    /* Centred means untouched: at 1.0 every picture is shown whole, which is the point
-       of the band. The recede happens on the way past instead of the way in, so the
-       depth is still there but nothing is ever cropped while you are looking at it. */
-    var FAR = 0.94;    /* band scale while the screen is away from centre */
-    var NEAR = 1.0;    /* band scale once centred: full height, nothing cut */
+    var FAR = 1.16;    /* band scale while the screen is away from centre */
+    var NEAR = 1.06;   /* band scale once centred (stays > 1: no edge gaps) */
     var LABEL_LAG = 46;  /* px the copy trails the scroll: the parallax depth */
     var TITLE_LAG = 40;  /* the headline trails further still */
     var VEIL = 0.6;      /* how far the screen sinks into black off-centre */
