@@ -239,7 +239,8 @@ img { display: block; max-width: 100%; }
   /* keeps the outer stroke and drops the fill, so the greyscale never spreads inward */
   -webkit-mask: radial-gradient(circle closest-side, transparent calc(100% - 1.2px), #000 calc(100% - 1.2px));
   mask: radial-gradient(circle closest-side, transparent calc(100% - 1.2px), #000 calc(100% - 1.2px));
-  opacity: .75;
+  /* fully opaque on purpose: partial alpha mixes the inverted result back into the
+     backdrop, which is what made the ring vanish against a light photograph */
   transition: width .4s var(--ease), height .4s var(--ease), opacity .3s ease;
 }
 .cursor__dot {
