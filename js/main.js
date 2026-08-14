@@ -108,7 +108,7 @@
     cur.setAttribute("aria-hidden", "true");
     cur.innerHTML = '<span class="cursor__ring"></span>' +
                     '<span class="cursor__dot"></span>' +
-                    '<span class="cursor__tag">DRAG</span>';
+                    '<span class="cursor__tag"></span>'; /* the word is drawn by CSS */
     document.body.appendChild(cur);
 
     var tx = window.innerWidth / 2, ty = window.innerHeight / 2;
