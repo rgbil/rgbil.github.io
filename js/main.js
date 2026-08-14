@@ -106,9 +106,11 @@
     var cur = document.createElement("div");
     cur.className = "cursor is-out";
     cur.setAttribute("aria-hidden", "true");
-    cur.innerHTML = '<span class="cursor__ring"></span>' +
-                    '<span class="cursor__dot"></span>' +
-                    '<span class="cursor__tag"></span>'; /* the word is drawn by CSS */
+    /* every shape twice: the greyscale copy under the inverting one */
+    cur.innerHTML = ["ring", "dot", "tag"].map(function (shape) {
+      return '<span class="cursor__grey cursor__' + shape + '"></span>' +
+             '<span class="cursor__ink cursor__' + shape + '"></span>';
+    }).join("");
     document.body.appendChild(cur);
 
     /* moved individually: a transform on their container would isolate the blending

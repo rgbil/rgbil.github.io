@@ -203,13 +203,13 @@ img { display: block; max-width: 100%; }
 }
 
 /* ---------- cursor ----------
-   A ring that trails the pointer and reacts to what is under it. Pointer devices
-   only: it is replaced by nothing at all on touch.
+   A ring that trails the pointer and reacts to what is under it. Pointer devices only.
 
-   The inversion is strictly greyscale, which needs the backdrop desaturated before
-   difference is applied. Applied to the box that would desaturate a disc the size of
-   the cursor, so each part is masked down to what it actually draws: the ring to its
-   own stroke, the dot to itself. */
+   Each shape is drawn twice. The lower copy only desaturates the backdrop; the upper
+   copy inverts against it. They are separate elements on purpose: an element carrying
+   backdrop-filter is isolated from blending, so asking one element to do both leaves
+   it as flat white, visible on dark and invisible on light. Split like this the
+   inversion always works, and the greyscale is a refinement on top of it. */
 .cursor {
   display: none;
   position: fixed;
@@ -222,25 +222,24 @@ img { display: block; max-width: 100%; }
   /* deliberately no transform and no opacity: either one would make this a stacking
      context, and the parts inside would blend against it instead of the page */
 }
-.cursor__ring,
-.cursor__dot {
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: var(--white);
+.cursor span { position: absolute; top: 0; left: 0; }
+
+.cursor__grey {
   backdrop-filter: grayscale(1);
   -webkit-backdrop-filter: grayscale(1);
-  mix-blend-mode: difference;
 }
+.cursor__ink {
+  background: var(--white);
+  mix-blend-mode: difference; /* full strength: any alpha here dilutes the inversion */
+}
+
 .cursor__ring {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  /* keeps the outer stroke and drops the fill, so the greyscale never spreads inward */
+  /* keeps the outer stroke and drops the fill, so neither layer covers a disc */
   -webkit-mask: radial-gradient(circle closest-side, transparent calc(100% - 1.2px), #000 calc(100% - 1.2px));
   mask: radial-gradient(circle closest-side, transparent calc(100% - 1.2px), #000 calc(100% - 1.2px));
-  /* fully opaque on purpose: partial alpha mixes the inverted result back into the
-     backdrop, which is what made the ring vanish against a light photograph */
   transition: width .4s var(--ease), height .4s var(--ease), opacity .3s ease;
 }
 .cursor__dot {
@@ -249,28 +248,19 @@ img { display: block; max-width: 100%; }
   border-radius: 50%;
   transition: opacity .3s ease;
 }
-/* The word as outlines rather than as text: letterforms cannot mask their own
-   element, and without a mask the greyscale would cover the label's rectangle
-   instead of its letters. Cut from the same IBM Plex Mono the page loads. */
+/* the word as outlines, cut from the same IBM Plex Mono the page loads: letterforms
+   cannot mask their own element, so they are baked into a path once */
 .cursor__tag {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 27px;
   height: 6.9px; /* 27 / 3.9155, the outlines' own ratio */
-  background: var(--white);
   -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%2295.0%20-710.0%202827.0%20722.0%22%3E%3Cpath%20d=%22M95%20-698H290Q418%20-698%20481.0%20-610.0Q544%20-522%20544%20-349Q544%20-176%20481.0%20-88.0Q418%200%20290%200H95ZM286%20-73Q370%20-73%20412.5%20-131.0Q455%20-189%20455%20-295V-403Q455%20-509%20412.5%20-567.0Q370%20-625%20286%20-625H179V-73ZM974.0%200H890.0V-698H1144.0Q1241.0%20-698%201292.0%20-645.0Q1343.0%20-592%201343.0%20-497Q1343.0%20-412%201299.0%20-361.0Q1255.0%20-310%201171.0%20-302L1349.0%200H1255.0L1085.0%20-298H974.0ZM1142.0%20-369Q1195.0%20-369%201224.5%20-395.5Q1254.0%20-422%201254.0%20-471V-523Q1254.0%20-572%201224.5%20-598.5Q1195.0%20-625%201142.0%20-625H974.0V-369ZM2081.0%200%202022.0%20-199H1777.0L1718.0%200H1631.0L1845.0%20-698H1956.0L2170.0%200ZM1904.0%20-609H1895.0L1797.0%20-272H2002.0ZM2844.0%20-93H2839.0Q2830.0%20-73%202818.0%20-54.0Q2806.0%20-35%202787.5%20-20.5Q2769.0%20-6%202743.0%203.0Q2717.0%2012%202681.0%2012Q2567.0%2012%202511.5%20-80.0Q2456.0%20-172%202456.0%20-344Q2456.0%20-524%202517.0%20-617.0Q2578.0%20-710%202705.0%20-710Q2754.0%20-710%202790.0%20-697.0Q2826.0%20-684%202851.5%20-662.0Q2877.0%20-640%202894.0%20-612.5Q2911.0%20-585%202922.0%20-557L2850.0%20-524Q2841.0%20-547%202829.5%20-567.5Q2818.0%20-588%202801.5%20-603.5Q2785.0%20-619%202762.0%20-628.0Q2739.0%20-637%202708.0%20-637Q2624.0%20-637%202584.5%20-574.0Q2545.0%20-511%202545.0%20-406V-298Q2545.0%20-245%202553.0%20-201.5Q2561.0%20-158%202579.5%20-126.0Q2598.0%20-94%202627.5%20-76.5Q2657.0%20-59%202700.0%20-59Q2768.0%20-59%202806.0%20-100.0Q2844.0%20-141%202844.0%20-206V-278H2697.0V-345H2922.0V0H2844.0Z%22%20fill=%22%23fff%22/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%2295.0%20-710.0%202827.0%20722.0%22%3E%3Cpath%20d=%22M95%20-698H290Q418%20-698%20481.0%20-610.0Q544%20-522%20544%20-349Q544%20-176%20481.0%20-88.0Q418%200%20290%200H95ZM286%20-73Q370%20-73%20412.5%20-131.0Q455%20-189%20455%20-295V-403Q455%20-509%20412.5%20-567.0Q370%20-625%20286%20-625H179V-73ZM974.0%200H890.0V-698H1144.0Q1241.0%20-698%201292.0%20-645.0Q1343.0%20-592%201343.0%20-497Q1343.0%20-412%201299.0%20-361.0Q1255.0%20-310%201171.0%20-302L1349.0%200H1255.0L1085.0%20-298H974.0ZM1142.0%20-369Q1195.0%20-369%201224.5%20-395.5Q1254.0%20-422%201254.0%20-471V-523Q1254.0%20-572%201224.5%20-598.5Q1195.0%20-625%201142.0%20-625H974.0V-369ZM2081.0%200%202022.0%20-199H1777.0L1718.0%200H1631.0L1845.0%20-698H1956.0L2170.0%200ZM1904.0%20-609H1895.0L1797.0%20-272H2002.0ZM2844.0%20-93H2839.0Q2830.0%20-73%202818.0%20-54.0Q2806.0%20-35%202787.5%20-20.5Q2769.0%20-6%202743.0%203.0Q2717.0%2012%202681.0%2012Q2567.0%2012%202511.5%20-80.0Q2456.0%20-172%202456.0%20-344Q2456.0%20-524%202517.0%20-617.0Q2578.0%20-710%202705.0%20-710Q2754.0%20-710%202790.0%20-697.0Q2826.0%20-684%202851.5%20-662.0Q2877.0%20-640%202894.0%20-612.5Q2911.0%20-585%202922.0%20-557L2850.0%20-524Q2841.0%20-547%202829.5%20-567.5Q2818.0%20-588%202801.5%20-603.5Q2785.0%20-619%202762.0%20-628.0Q2739.0%20-637%202708.0%20-637Q2624.0%20-637%202584.5%20-574.0Q2545.0%20-511%202545.0%20-406V-298Q2545.0%20-245%202553.0%20-201.5Q2561.0%20-158%202579.5%20-126.0Q2598.0%20-94%202627.5%20-76.5Q2657.0%20-59%202700.0%20-59Q2768.0%20-59%202806.0%20-100.0Q2844.0%20-141%202844.0%20-206V-278H2697.0V-345H2922.0V0H2844.0Z%22%20fill=%22%23fff%22/%3E%3C/svg%3E") center / contain no-repeat;
-  backdrop-filter: grayscale(1);
-  -webkit-backdrop-filter: grayscale(1);
-  mix-blend-mode: difference;
   opacity: 0;
   transition: opacity .3s ease;
 }
-/* opacity here would create a stacking context too, so the fade lives on the parts */
-.cursor.is-out .cursor__ring,
-.cursor.is-out .cursor__dot,
-.cursor.is-out .cursor__tag { opacity: 0; }
+
+/* opacity on the container would create a stacking context, so the fade lives here */
+.cursor.is-out span { opacity: 0; }
 /* over anything clickable it opens up and the centre point steps aside */
 .cursor.is-link .cursor__ring { width: 58px; height: 58px; }
 .cursor.is-link .cursor__dot { opacity: 0; }
