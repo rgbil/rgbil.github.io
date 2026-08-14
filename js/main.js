@@ -111,6 +111,10 @@
                     '<span class="cursor__tag"></span>'; /* the word is drawn by CSS */
     document.body.appendChild(cur);
 
+    /* moved individually: a transform on their container would isolate the blending
+       and the whole thing would draw as flat white */
+    var parts = Array.prototype.slice.call(cur.children);
+
     var tx = window.innerWidth / 2, ty = window.innerHeight / 2;
     var x = tx, y = ty;
 
@@ -135,7 +139,8 @@
     (function follow() {
       x += (tx - x) * 0.19;
       y += (ty - y) * 0.19;
-      cur.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0)";
+      var tf = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) translate(-50%,-50%)";
+      for (var i = 0; i < parts.length; i++) parts[i].style.transform = tf;
       requestAnimationFrame(follow);
     })();
   }
