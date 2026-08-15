@@ -582,6 +582,7 @@
 
     var gesture = 0;
     var lastWheelAt = 0;
+    var lastDir = 0;
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
@@ -597,13 +598,23 @@
          exploring a category should not cost you the category */
       if (now - lastSideways < 220) { gesture = 0; return; }
 
-      if (now - lastWheelAt > GESTURE_GAP) { gesture = 0; spent = false; }
-      lastWheelAt = now;
-
       var d = e.deltaY;
       if (e.deltaMode === 1) d *= 16;        /* lines */
       else if (e.deltaMode === 2) d *= vh(); /* pages */
       var down = d > 0;
+      var dir = down ? 1 : -1;
+
+      /* A gesture ends when the pad goes quiet, and also the moment the hand reverses.
+         Without the second test, scrolling down and immediately back up was swallowed:
+         the downward stroke leaves momentum arriving for up to a second, the gesture
+         never went quiet, and the upward stroke was treated as more of the same one,
+         which had already been spent. That is the scroll refusing to go back up. */
+      if (now - lastWheelAt > GESTURE_GAP || dir !== lastDir) {
+        gesture = 0;
+        spent = false;
+      }
+      lastWheelAt = now;
+      lastDir = dir;
 
       var i = indexNow();
       var sec = sections[i];
