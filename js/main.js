@@ -443,6 +443,20 @@
       }, 340);
     }
 
+    /* Where a gesture from screen i should land. Coming back up from part way into a
+       screen means aligning it first, not skipping to the one before: after free
+       scrolling up out of the portfolio you sit inside the last category, and asking
+       to go up meant leaping a whole screen past the one you were looking at. */
+    function targetFrom(i, down, fromTop) {
+      /* measured from where the gesture began: by the time it counts, the browser may
+         already have scrolled a few pixels of its own, and judging alignment then
+         would call an aligned screen misaligned and send you back to it */
+      var offset = fromTop - sections[i].offsetTop;
+      var aligned = Math.abs(offset) < 8;
+      if (down) return i + 1;
+      return aligned ? i - 1 : i;
+    }
+
     function glideTo(i) {
       i = Math.max(0, Math.min(sections.length - 1, i));
       var dist = Math.abs(sections[i].offsetTop - main.scrollTop);
@@ -577,12 +591,16 @@
        A section taller than the viewport is exempt while it still has room: reading
        the portfolio is ordinary scrolling until an edge is reached. */
     var GESTURE_GAP = 140;  /* ms of quiet that separates one gesture from the next */
-    var NOTCH = 45;         /* px in one event: only a wheel click arrives this way */
-    var SWIPE = 115;        /* px a trackpad gesture must total before it counts */
+    /* Deltas arrive in CSS pixels, so on a 2x screen they are half the raw figure the
+       hardware reports; these are sized for what actually turns up. */
+    var NOTCH = 40;         /* px in one event: only a wheel click arrives this way */
+    var SWIPE = 80;         /* px a trackpad gesture must total before it counts */
 
     var gesture = 0;
     var lastWheelAt = 0;
     var lastDir = 0;
+    var startIdx = 0;       /* the screen the gesture began on */
+    var gestureTop = 0;     /* and the scroll position it began at */
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
@@ -612,11 +630,17 @@
       if (now - lastWheelAt > GESTURE_GAP || dir !== lastDir) {
         gesture = 0;
         spent = false;
+        /* Taken once, at the start. Below the threshold the browser is still scrolling
+           its few pixels, which can carry the position over a boundary before the
+           gesture counts: reading the screen at that moment answers for where those
+           pixels left us, not for where the hand began, and the page moved two. */
+        startIdx = indexNow();
+        gestureTop = main.scrollTop;
       }
       lastWheelAt = now;
       lastDir = dir;
 
-      var i = indexNow();
+      var i = startIdx;
       var sec = sections[i];
 
       if (!paged(sec)) {
@@ -628,18 +652,26 @@
         return;
       }
 
-      e.preventDefault();
-      if (spent || animating) return;
+      /* Once we have taken the gesture, the browser must not also act on it. */
+      if (animating || spent) { e.preventDefault(); return; }
 
       /* Two devices, two thresholds. A mouse wheel delivers one large jolt and must
          page on that alone. A trackpad delivers a stream of small ones, where a light
          brush against the pad can add up to a jolt's worth without being a gesture at
-         all, so it has to travel considerably further before it counts. */
+         all, so it has to travel further before it counts.
+
+         Nothing is cancelled until one of them is met. Cancelling first and deciding
+         afterwards meant a stroke that never reached the threshold was swallowed and
+         acted on by nobody: the page simply refused to move, which is exactly what a
+         stuck scroll is. Below the threshold the browser scrolls its few pixels, and
+         the landing tidies up after. */
       var mag = Math.abs(d);
       gesture += mag;
       if (mag < NOTCH && gesture < SWIPE) return;
+
+      e.preventDefault();
       spent = true;
-      glideTo(i + (down ? 1 : -1));
+      glideTo(targetFrom(i, down, gestureTop));
     }, { passive: false });
 
     /* ---- the finger pages too ----
@@ -710,7 +742,7 @@
       var forward = travelled > 0;
       var go = (far || fast) && Math.abs(travelled) > 4;
 
-      var i = go ? fromIndex + (forward ? 1 : -1) : fromIndex;
+      var i = go ? targetFrom(fromIndex, forward, startTop) : fromIndex;
       i = Math.max(0, Math.min(sections.length - 1, i));
       var to = sections[i].offsetTop;
       var left = Math.abs(to - main.scrollTop);
