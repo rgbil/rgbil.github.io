@@ -387,13 +387,19 @@
        starting it again, which is seen as a jump rather than a continuation. */
     function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
-    function indexNow() {
-      var probe = main.scrollTop + vh() * 0.5;
+    /* One answer to "which screen is this", used by everything. The pager used to ask
+       which screen sat at the middle of the viewport while the snap asked which one
+       contained the scroll position, and near the foot of a category the two disagreed:
+       the drag was let go as free scrolling and the landing then claimed it as a
+       category and pulled it back up. */
+    function indexAt(y) {
       for (var i = sections.length - 1; i >= 0; i--) {
-        if (probe >= sections[i].offsetTop) return i;
+        if (y >= sections[i].offsetTop - 1) return i;
       }
       return 0;
     }
+
+    function indexNow() { return indexAt(main.scrollTop + 2); }
 
     function glideY(to, dur, curve) {
       var shape = curve || ease;
@@ -478,12 +484,7 @@
     var touching = false;
     var lastResize = 0;
 
-    function sectionAt(y) {
-      for (var i = sections.length - 1; i >= 0; i--) {
-        if (y >= sections[i].offsetTop - 1) return sections[i];
-      }
-      return sections[0];
-    }
+    function sectionAt(y) { return sections[indexAt(y)]; }
 
     function restFor(y, v) {
       var h = vh();
