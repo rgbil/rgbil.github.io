@@ -409,6 +409,7 @@
 
       cancelAnimationFrame(raf);
       animating = true;
+      glideTarget = to;
 
       var t0 = performance.now();
       raf = requestAnimationFrame(function step(now) {
@@ -418,6 +419,7 @@
           raf = requestAnimationFrame(step);
         } else {
           animating = false;
+          glideTarget = null;
           flush();
         }
       });
@@ -615,6 +617,7 @@
     var lastDir = 0;
     var startIdx = 0;       /* the screen the gesture began on */
     var gestureTop = 0;     /* and the scroll position it began at */
+    var glideTarget = null; /* where a travel in progress is headed */
     var queued = 0;         /* one more step, asked for while the page was travelling */
     var qGesture = 0;
     var spent = false;      /* this gesture has already moved a screen */
@@ -728,10 +731,16 @@
 
     main.addEventListener("touchstart", function (e) {
       touching = true;
-      if (animating) { cancelAnimationFrame(raf); animating = false; }
+
+      /* Touching down during a travel takes control, but the screen you are on is the
+         one it was going to, not the one it happens to be passing. Reading the position
+         mid-flight put you back in the category being left, and a small drag then
+         aligned you to it: arriving at the portfolio and nudging threw you back up. */
+      var heading = animating ? glideTarget : null;
+      if (animating) { cancelAnimationFrame(raf); animating = false; glideTarget = null; }
       if (e.touches.length > 1) { dragging = false; return; }
 
-      fromIndex = indexNow();
+      fromIndex = indexAt((heading === null ? main.scrollTop : heading) + 2);
       if (!paged(sections[fromIndex])) { dragging = false; return; }
 
       dragging = true;
