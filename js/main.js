@@ -346,8 +346,13 @@
     var sections = Array.prototype.slice.call(main.children);
     if (sections.length < 2) return;
 
-    /* ours now: the CSS rule stays as the no-JS fallback */
-    main.style.scrollSnapType = "none";
+    /* A phone gets the platform's own snapping back. Everything built above is wheel
+       work, and none of it runs without a wheel: on touch the page was left with free
+       momentum and a JavaScript settle, which is a poor substitute for snapping that
+       lives in the compositor, reads the fling properly and never fights the finger.
+       The pointer decides which system is in charge. */
+    var coarse = window.matchMedia("(pointer: coarse)").matches;
+    if (!coarse) main.style.scrollSnapType = "none";
 
     var animating = false;
     var raf = 0;
@@ -375,13 +380,19 @@
 
       cancelAnimationFrame(raf);
       animating = true;
+      /* native snap would correct every frame we write */
+      if (coarse) main.style.scrollSnapType = "none";
 
       var t0 = performance.now();
       raf = requestAnimationFrame(function step(now) {
         var t = Math.min(1, (now - t0) / dur);
         main.scrollTop = from + dist * ease(t);
-        if (t < 1) raf = requestAnimationFrame(step);
-        else animating = false;
+        if (t < 1) {
+          raf = requestAnimationFrame(step);
+        } else {
+          if (coarse) main.style.scrollSnapType = "";
+          animating = false;
+        }
       });
     }
 
@@ -493,6 +504,7 @@
     /* the touch path has no chase to fold into, so it lands on its own glide,
        timed to sit in the same weight class as the wheel */
     function settle() {
+      if (coarse) return; /* the browser is snapping; a second opinion only fights it */
       if (animating || touching) return;
       /* a phone hiding its address bar resizes every screen: the rest points move
          underneath us, and settling on them then reads as the page moving by itself */
