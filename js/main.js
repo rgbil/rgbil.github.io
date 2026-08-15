@@ -538,7 +538,8 @@
        A section taller than the viewport is exempt while it still has room: reading
        the portfolio is ordinary scrolling until an edge is reached. */
     var GESTURE_GAP = 140;  /* ms of quiet that separates one gesture from the next */
-    var TRIGGER = 34;       /* px a gesture must total before it counts as intent */
+    var NOTCH = 45;         /* px in one event: only a wheel click arrives this way */
+    var SWIPE = 115;        /* px a trackpad gesture must total before it counts */
 
     var gesture = 0;
     var lastWheelAt = 0;
@@ -565,8 +566,13 @@
       e.preventDefault();
       if (spent || animating) return;
 
-      gesture += Math.abs(d);
-      if (gesture < TRIGGER) return;
+      /* Two devices, two thresholds. A mouse wheel delivers one large jolt and must
+         page on that alone. A trackpad delivers a stream of small ones, where a light
+         brush against the pad can add up to a jolt's worth without being a gesture at
+         all, so it has to travel considerably further before it counts. */
+      var mag = Math.abs(d);
+      gesture += mag;
+      if (mag < NOTCH && gesture < SWIPE) return;
       spent = true;
       glideTo(i + (down ? 1 : -1));
     }, { passive: false });
