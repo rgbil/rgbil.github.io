@@ -554,8 +554,6 @@
       idle = setTimeout(settle, touching ? 260 : 160);
     }, { passive: true });
 
-    main.addEventListener("touchend", function () { touching = false; }, { passive: true });
-    main.addEventListener("touchcancel", function () { touching = false; }, { passive: true });
     window.addEventListener("resize", function () { lastResize = Date.now(); });
 
     /* ---- the wheel pages ----
@@ -632,13 +630,79 @@
       glideTo(i + (down ? 1 : -1));
     }, { passive: false });
 
-   /* a finger owns the scroll outright: drop both the glide and the wheel chase */
-    main.addEventListener("touchstart", function () {
+    /* ---- the finger pages too ----
+       Left to the browser, a flick crosses a screen in a couple of hundred milliseconds
+       and the page arrives wherever momentum ran out. Two things follow: the movement
+       between categories is never the same twice, and the logo's flight, which is tied
+       to the scroll position, is compressed into whatever time the flick took.
+
+       So a drag on a full-height screen is followed one to one, and the release is
+       finished by the same eased travel the wheel uses. The mark still flies with the
+       scroll, exactly as before, but the scroll now has a known duration.
+
+       A section taller than the screen is left entirely to the browser: reading is
+       ordinary scrolling, and momentum belongs there. */
+    var TAKE = 0.16;   /* screens dragged before a release completes rather than returns */
+    var FLICK = 420;   /* px/s that completes it regardless of distance */
+
+    var dragging = false, axis = "", fromIndex = 0;
+    var startY = 0, startX = 0, startTop = 0, lastY = 0, lastT = 0, flickV = 0;
+
+    main.addEventListener("touchstart", function (e) {
       touching = true;
-      if (!animating) return;
-      cancelAnimationFrame(raf);
-      animating = false;
+      if (animating) { cancelAnimationFrame(raf); animating = false; }
+      if (e.touches.length > 1) { dragging = false; return; }
+
+      fromIndex = indexNow();
+      if (sections[fromIndex].offsetHeight > vh() + 4) { dragging = false; return; }
+
+      dragging = true;
+      axis = "";
+      startY = lastY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      startTop = main.scrollTop;
+      lastT = performance.now();
+      flickV = 0;
     }, { passive: true });
+
+    main.addEventListener("touchmove", function (e) {
+      if (!dragging || e.touches.length > 1) return;
+      var y = e.touches[0].clientY;
+      var x = e.touches[0].clientX;
+
+      /* the first movement decides who the gesture belongs to: sideways is the strip's */
+      if (!axis) {
+        var dx = Math.abs(x - startX), dy = Math.abs(y - startY);
+        if (dx < 6 && dy < 6) return;
+        axis = dy > dx ? "y" : "x";
+        if (axis === "x") { dragging = false; return; }
+      }
+
+      e.preventDefault();
+      var now = performance.now();
+      var dt = Math.max(8, now - lastT) / 1000;
+      flickV = (lastY - y) / dt;
+      lastY = y;
+      lastT = now;
+      main.scrollTop = startTop + (startY - y);
+    }, { passive: false });
+
+    function release() {
+      touching = false;
+      if (!dragging) return;
+      dragging = false;
+
+      var travelled = main.scrollTop - startTop;
+      var far = Math.abs(travelled) > vh() * TAKE;
+      var fast = Math.abs(flickV) > FLICK;
+      var forward = travelled > 0;
+      var go = (far || fast) && Math.abs(travelled) > 4;
+
+      glideTo(go ? fromIndex + (forward ? 1 : -1) : fromIndex);
+    }
+
+    main.addEventListener("touchend", release, { passive: true });
+    main.addEventListener("touchcancel", release, { passive: true });
 
     var KEYS = {
       ArrowDown: 1, PageDown: 1, " ": 1, Spacebar: 1,
