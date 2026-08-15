@@ -491,11 +491,12 @@
          them. A section taller than the viewport is different, because stopping part
          way through it is how you read it, so there the window stays narrow and
          widens only with speed. */
+      /* A section that scrolls on its own is left alone completely: the portfolio,
+         the about text and the contact screen are read, not stepped through, and any
+         pull towards an edge while reading is an interruption. */
       var sec = sectionAt(y);
-      var full = sec && sec.offsetHeight <= h * 1.05;
-      var zone = full
-        ? h * 0.51
-        : h * (CALM_ZONE + Math.min(FLICK_ZONE, Math.abs(v) / (h * 5)));
+      if (sec && sec.offsetHeight > h * 1.05) return null;
+      var zone = h * 0.51;
 
       var best = null, bestD = Infinity;
       restPoints().forEach(function (pt) {
@@ -574,11 +575,9 @@
     var GESTURE_GAP = 140;  /* ms of quiet that separates one gesture from the next */
     var NOTCH = 45;         /* px in one event: only a wheel click arrives this way */
     var SWIPE = 115;        /* px a trackpad gesture must total before it counts */
-    var EDGE_PAUSE = 420;   /* ms a tall section keeps you once you reach its end */
 
     var gesture = 0;
     var lastWheelAt = 0;
-    var edgeAt = 0;
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
@@ -605,21 +604,13 @@
       var sec = sections[i];
       var tall = sec.offsetHeight > vh() + 4;
 
-      if (tall && !atEdge(sec, down)) {
-        /* Reading a section taller than the screen is the browser's job. Marking the
-           gesture as used matters as much: without it, the very stroke that carries
-           you to the foot of the portfolio carries straight on into the next screen,
-           so you never get to stop and look at what you just scrolled to. */
-        spent = true;
-        edgeAt = 0;
-        return;
-      }
-
       if (tall) {
-        if (!edgeAt) edgeAt = now;              /* just arrived at an edge */
-        if (now - edgeAt < EDGE_PAUSE) return;  /* let it rest there before leaving */
-      } else {
-        edgeAt = 0;
+        /* Ordinary scrolling, all the way through and out the other side. Paging at
+           the edge meant the stroke that brought you to the foot of the portfolio
+           carried straight on into the next screen; leaving it to the browser means
+           you arrive, and stay, until you ask to move again. */
+        spent = true;
+        return;
       }
 
       e.preventDefault();
