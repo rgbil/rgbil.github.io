@@ -621,6 +621,7 @@
     var glideTarget = null; /* where a travel in progress is headed */
     var queued = 0;         /* one more step, asked for while the page was travelling */
     var qGesture = 0;       /* driven movement counted since the last screen was taken */
+    var prevMag = 0;        /* the previous step, to tell coasting from pushing */
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
@@ -650,6 +651,7 @@
       if (now - lastWheelAt > GESTURE_GAP || dir !== lastDir) {
         gesture = 0;
         qGesture = 0;
+        prevMag = 0;
         spent = false;
         /* Taken once, at the start. Below the threshold the browser is still scrolling
            its few pixels, which can carry the position over a boundary before the
@@ -689,7 +691,13 @@
          whole gesture again. Counting everything moved two screens for one flick;
          counting nothing left a long scroll stuck after the first. */
       if (spent) {
-        if (mag >= SUSTAINED) {
+        /* Momentum only ever slows: every step it delivers is smaller than the one
+           before. A hand pushing the pad does not behave that way, it wavers. So a
+           step counts towards another screen only if it did not shrink, which coasting
+           can never satisfy for long, and pushing satisfies constantly. */
+        var driven = mag >= SUSTAINED && mag >= prevMag * 0.9;
+        prevMag = mag;
+        if (driven) {
           qGesture += mag;
           if (qGesture >= SWIPE) {
             qGesture = 0;
@@ -699,6 +707,7 @@
         }
         return;
       }
+      prevMag = mag;
 
       /* Two devices, two thresholds. A mouse wheel delivers one large jolt and must
          page on that alone. A trackpad delivers a stream of small ones, where a light
