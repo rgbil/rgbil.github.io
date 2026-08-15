@@ -8,3 +8,6 @@ package-lock.json
 tools/
 # full-resolution originals: kept locally, never shipped
 img/_source/
+# raw source material: kept beside the project, never shipped
+Rgbil Images/
+Rgbil Images.zip
