@@ -524,12 +524,18 @@ img { display: block; max-width: 100%; }
   background: var(--white);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v15m0 0 5.5-5.5m-5.5 5.5-5.5-5.5'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v15m0 0 5.5-5.5m-5.5 5.5-5.5-5.5'/%3E%3C/svg%3E") center / contain no-repeat;
-  backdrop-filter: grayscale(1);
-  -webkit-backdrop-filter: grayscale(1);
   mix-blend-mode: difference;
   animation: drift 3.6s cubic-bezier(.45, 0, .25, 1) infinite;
 }
 .cat__next:hover .cat__next-mark { opacity: .55; }
+/* the greyscale costs a readback of the screen behind it on every frame, which a phone
+   cannot afford; the inversion on its own still reads on light and on dark alike */
+@media (pointer: fine) {
+  .cat__next-mark {
+    backdrop-filter: grayscale(1);
+    -webkit-backdrop-filter: grayscale(1);
+  }
+}
 
 @keyframes drift {
   0%   { transform: translateY(-5px); opacity: 0; }

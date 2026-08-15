@@ -146,6 +146,9 @@
   /* ---------- film grain ---------- */
   function addGrain() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    /* a full-screen composited layer at 4% opacity: real cost on a phone GPU,
+       and at that pixel density essentially invisible */
+    if (window.matchMedia("(pointer: coarse)").matches) return;
     var g = document.createElement("div");
     g.className = "grain";
     g.setAttribute("aria-hidden", "true");
@@ -796,6 +799,10 @@
     var DRIFT = 22;      /* px/s the row moves when nothing else is happening */
     var PUSH = 0.85;     /* how hard vertical scroll velocity shoves it sideways */
     var MAX_SKEW = 3;    /* deg: the lean that sells the momentum */
+    /* A skewed layer cannot simply be shifted by the compositor, it has to be redrawn,
+       and these tracks are thousands of pixels wide. Worth it on a desktop GPU, not on
+       a phone, where it was the difference between gliding and stuttering. */
+    var lean = !window.matchMedia("(pointer: coarse)").matches;
 
     var rows = strips.map(function (el, i) {
       var sec = el.closest("section");
@@ -942,7 +949,7 @@
       lastY = y;
       vel += (raw - vel) * 0.12; /* smoothed: the lean should not twitch */
 
-      var skew = Math.max(-MAX_SKEW, Math.min(MAX_SKEW, vel * 0.005));
+      var skew = lean ? Math.max(-MAX_SKEW, Math.min(MAX_SKEW, vel * 0.005)) : 0;
 
       rows.forEach(function (r) {
         if (!r.seen || !r.half) return;
@@ -960,8 +967,9 @@
         r.x = r.x % r.half;
         if (r.x > 0) r.x -= r.half;
 
-        r.track.style.transform =
-          "translate3d(" + r.x.toFixed(2) + "px,0,0) skewX(" + skew.toFixed(2) + "deg)";
+        r.track.style.transform = lean
+          ? "translate3d(" + r.x.toFixed(2) + "px,0,0) skewX(" + skew.toFixed(2) + "deg)"
+          : "translate3d(" + r.x.toFixed(2) + "px,0,0)";
       });
 
       requestAnimationFrame(frame);
@@ -972,6 +980,9 @@
   function startFx() {
     var c = document.getElementById("fx");
     if (!c || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    /* it reacts to a pointer, and a touch screen has none: on a phone this was seventy
+       particles and a full-screen gradient redrawn every frame for no visible reason */
+    if (window.matchMedia("(pointer: coarse)").matches) { c.style.display = "none"; return; }
     var ctx = c.getContext("2d");
     var w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
 
