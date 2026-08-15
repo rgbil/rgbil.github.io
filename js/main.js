@@ -366,9 +366,38 @@
         sec.classList.toggle("screen--tall", !paged(sec));
       });
     }
+    /* Every screen is measured against the viewport, and on a phone the viewport
+       changes size the moment the address bar slides away. All seven screens grow at
+       once, several hundred pixels of them above you, while the scroll position keeps
+       the number it had: without doing anything, the reader is suddenly a section
+       earlier or later. It looks exactly like the page snapping somewhere by itself.
+       So the position is expressed as a screen and an offset into it, and restored
+       against the new measurements. */
+    var tops = [];
+    function cacheTops() {
+      tops = sections.map(function (s) { return s.offsetTop; });
+    }
+
+    function reflow() {
+      var y = main.scrollTop;
+      var i = 0;
+      for (var k = tops.length - 1; k >= 0; k--) {
+        if (y >= tops[k] - 1) { i = k; break; }
+      }
+      var offset = y - (tops[i] || 0);
+
+      cacheTops();
+      markTall();
+
+      var want = (tops[i] || 0) + offset;
+      var max = main.scrollHeight - (main.clientHeight || 1);
+      main.scrollTop = Math.max(0, Math.min(max, want));
+    }
+
     markTall();
-    window.addEventListener("resize", markTall);
-    window.addEventListener("load", markTall);
+    cacheTops();
+    window.addEventListener("resize", reflow);
+    window.addEventListener("load", function () { markTall(); cacheTops(); });
 
 
     var animating = false;
