@@ -370,7 +370,6 @@
 
       cancelAnimationFrame(raf);
       animating = true;
-      coasting = false; /* the glide owns the scroll while it runs */
 
       var t0 = performance.now();
       raf = requestAnimationFrame(function step(now) {
@@ -392,12 +391,10 @@
     function cutTo(i) {
       cancelAnimationFrame(raf);
       animating = true;
-      coasting = false;
       veil.classList.add("is-on");
 
       setTimeout(function () {
         main.scrollTop = sections[i].offsetTop;
-        current = target = main.scrollTop;
         /* give the scroll-driven layers a beat to repaint at the new position,
            so the reveal shows the destination settled, not mid-adjustment */
         setTimeout(function () {
@@ -411,8 +408,7 @@
       i = Math.max(0, Math.min(sections.length - 1, i));
       var dist = Math.abs(sections[i].offsetTop - main.scrollTop);
       if (dist > vh() * 1.6) return cutTo(i);
-      /* one screen lands at ~950ms; longer jumps stretch, but not without limit */
-      glideY(sections[i].offsetTop, Math.min(1500, 700 + (dist / vh()) * 260));
+      glideY(sections[i].offsetTop, landingTime(main.scrollTop, dist));
     }
 
     /* every position a screen is allowed to come to rest at */
@@ -492,7 +488,7 @@
     /* the touch path has no chase to fold into, so it lands on its own glide,
        timed to sit in the same weight class as the wheel */
     function settle() {
-      if (animating || coasting || touching) return;
+      if (animating || touching) return;
       /* a phone hiding its address bar resizes every screen: the rest points move
          underneath us, and settling on them then reads as the page moving by itself */
       if (Date.now() - lastResize < 400) return;
@@ -521,7 +517,7 @@
       scrollV += (((y - vY) / dt) - scrollV) * 0.35;
       vY = y; vT = now;
 
-      if (animating || coasting) return; /* the chase lands itself */
+      if (animating) return;
       clearTimeout(idle);
       /* momentum on a phone stutters before it stops; waiting longer keeps the settle
          from firing into a gesture that has not actually finished */
@@ -532,85 +528,52 @@
     main.addEventListener("touchcancel", function () { touching = false; }, { passive: true });
     window.addEventListener("resize", function () { lastResize = Date.now(); });
 
-    /* ---- weighted wheel ----
-       The wheel no longer writes the scroll position, it writes a target the page
-       chases. That gives the page mass: it takes up speed, it carries on a little
-       after the fingers stop, and a violent flick cannot throw it across the site,
-       because the distance it may cover in one frame is capped outright. */
-    var target = main.scrollTop;
-    var current = target;
-    var coasting = false;
-    var lastFrame = performance.now();
+    /* ---- the wheel pages ----
+       Travelling freely and then looking for somewhere to land is what produced both
+       failures: momentum worth 1.4 screens made the screen after next the nearest one,
+       and momentum worth 0.6 fell back to where it started. So the decision is taken
+       before anything moves. One gesture is one screen, in the direction it was going,
+       and the page arrives exactly on it.
 
-    var GRIP = 0.09;      /* share of the remaining distance taken per frame */
-    var AIM_GRIP = 0.11;  /* a touch firmer once it is landing on a screen */
-    var STEP = 0.85;      /* a notch travels slightly less than the browser's own */
-    var TOP_SPEED = 1.7;  /* screens per second, the hard ceiling */
-    var QUEUE = 1.2;      /* screens that may be banked up ahead at any moment */
-    var QUIET = 110;      /* ms of stillness that means the gesture is over */
+       A section taller than the viewport is exempt while it still has room: reading
+       the portfolio is ordinary scrolling until an edge is reached. */
+    var GESTURE_GAP = 140;  /* ms of quiet that separates one gesture from the next */
+    var TRIGGER = 34;       /* px a gesture must total before it counts as intent */
 
+    var gesture = 0;
     var lastWheelAt = 0;
-    var aimed = false;
+    var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
       if (document.body.classList.contains("is-menu")) return;
-      if (e.ctrlKey) return;                              /* pinch zoom */
+      if (e.ctrlKey) return;                                /* pinch zoom */
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; /* sideways gesture */
-      e.preventDefault();
 
-      /* a wheel mid-glide is the user overriding us */
-      if (animating) { cancelAnimationFrame(raf); animating = false; }
+      var now = performance.now();
+      if (now - lastWheelAt > GESTURE_GAP) { gesture = 0; spent = false; }
+      lastWheelAt = now;
 
       var d = e.deltaY;
       if (e.deltaMode === 1) d *= 16;        /* lines */
       else if (e.deltaMode === 2) d *= vh(); /* pages */
+      var down = d > 0;
 
-      if (!coasting) { current = main.scrollTop; target = current; coasting = true; }
-      lastWheelAt = performance.now();
-      aimed = false;
+      var i = indexNow();
+      /* inside a tall section this is the browser's job, not ours */
+      if (!atEdge(sections[i], down)) return;
 
-      var max = main.scrollHeight - vh();
-      target = Math.max(0, Math.min(max, target + d * STEP));
-      /* momentum keeps firing events long after the flick: refuse to bank it all */
-      var cap = vh() * QUEUE;
-      target = Math.max(current - cap, Math.min(current + cap, target));
+      e.preventDefault();
+      if (spent || animating) return;
 
-      clearTimeout(idle);
+      gesture += Math.abs(d);
+      if (gesture < TRIGGER) return;
+      spent = true;
+      glideTo(i + (down ? 1 : -1));
     }, { passive: false });
 
-    (function chase(now) {
-      var dt = Math.min(0.05, (now - lastFrame) / 1000);
-      lastFrame = now;
-
-      if (coasting && !animating) {
-        /* the moment the gesture goes quiet, the screen edge becomes the target the
-           page is already chasing: the snap is the same motion finishing, not a
-           second animation with its own curve stapled onto the end */
-        if (!aimed && now - lastWheelAt > QUIET) {
-          var rest = restFor(current, (target - current) * GRIP * 60);
-          if (rest !== null) target = rest;
-          aimed = true;
-        }
-
-        /* same reasoning as landingTime: a softer pull while the mark is still flying */
-        var grip = aimed ? (onHero(current) ? AIM_GRIP * 0.5 : AIM_GRIP) : GRIP;
-        var step = (target - current) * (1 - Math.pow(1 - grip, dt * 60));
-        var limit = vh() * TOP_SPEED * dt;
-        if (step > limit) step = limit; else if (step < -limit) step = -limit;
-        current += step;
-
-        if (Math.abs(target - current) < 0.5) {
-          current = target;
-          coasting = false;
-        }
-        main.scrollTop = current;
-      }
-      requestAnimationFrame(chase);
-    })(lastFrame);
-    /* a finger owns the scroll outright: drop both the glide and the wheel chase */
+   /* a finger owns the scroll outright: drop both the glide and the wheel chase */
     main.addEventListener("touchstart", function () {
       touching = true;
-      coasting = false;
       if (!animating) return;
       cancelAnimationFrame(raf);
       animating = false;
