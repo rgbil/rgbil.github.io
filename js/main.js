@@ -587,14 +587,15 @@
     main.addEventListener("wheel", function (e) {
       if (document.body.classList.contains("is-menu")) return;
       if (e.ctrlKey) return;                                /* pinch zoom */
-      /* A gesture has to be clearly downward to move the page: at 1.6 to 1 a diagonal
-         swipe belongs to the strip underneath, which is what the hand was aiming at. */
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) * 1.6) return;
+      /* The two are deliberately asymmetric. A strip only claims a stroke that is
+         clearly sideways, at 1.6 to 1; the page claims anything merely downward. That
+         leaves no gesture belonging to neither, which would feel like a dead spot. */
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
 
       var now = performance.now();
-      /* and for a moment after a strip has been scrubbed, nothing moves the page:
+      /* and briefly after a strip has genuinely been scrubbed, nothing moves the page:
          exploring a category should not cost you the category */
-      if (now - lastSideways < 400) { gesture = 0; return; }
+      if (now - lastSideways < 220) { gesture = 0; return; }
 
       if (now - lastWheelAt > GESTURE_GAP) { gesture = 0; spent = false; }
       lastWheelAt = now;
@@ -1031,7 +1032,13 @@
          out rather than stopping dead with the fingers. The page keeps every purely
          vertical gesture: those are never touched here. */
       r.el.addEventListener("wheel", function (e) {
-        var sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+        /* A trackpad always leaks a little sideways movement into a vertical stroke.
+           Merely being larger than the vertical component was enough to claim the
+           gesture, and claiming it also blocked the page from moving for a moment:
+           with the pointer resting over a strip, which is where it sits when the hand
+           is not on the mouse, that read as the scroll sticking. The same 1.6 to 1
+           the page demands in the other direction is demanded here. */
+        var sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.6;
         var dx = sideways ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
         if (!dx) return;
         if (e.deltaMode === 1) dx *= 16;                 /* lines */
