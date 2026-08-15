@@ -442,6 +442,13 @@
     var touching = false;
     var lastResize = 0;
 
+    function sectionAt(y) {
+      for (var i = sections.length - 1; i >= 0; i--) {
+        if (y >= sections[i].offsetTop - 1) return sections[i];
+      }
+      return sections[0];
+    }
+
     function restFor(y, v) {
       var h = vh();
       var max = main.scrollHeight - h;
@@ -449,10 +456,16 @@
 
       var aim = y + v * PROJECT;
 
-      /* The window widens with speed. Stopped still, only a screen you are nearly on
-         may claim you, so a deliberate pause is respected. Thrown hard, the window
-         opens and the movement completes, because that is plainly what was meant. */
-      var zone = h * (CALM_ZONE + Math.min(FLICK_ZONE, Math.abs(v) / (h * 5)));
+      /* A screen that fits the viewport is never left half shown: whichever side the
+         gesture was heading for wins, and the page always comes to rest on one of
+         them. A section taller than the viewport is different, because stopping part
+         way through it is how you read it, so there the window stays narrow and
+         widens only with speed. */
+      var sec = sectionAt(y);
+      var full = sec && sec.offsetHeight <= h * 1.05;
+      var zone = full
+        ? h * 0.51
+        : h * (CALM_ZONE + Math.min(FLICK_ZONE, Math.abs(v) / (h * 5)));
 
       var best = null, bestD = Infinity;
       restPoints().forEach(function (pt) {
@@ -472,8 +485,8 @@
 
     function landingTime(y, d) {
       var slow = onHero(y);
-      return Math.min(slow ? 1600 : 880,
-                      (slow ? 820 : 400) + (d / vh()) * (slow ? 980 : 620));
+      return Math.min(slow ? 1600 : 1150,
+                      (slow ? 820 : 520) + (d / vh()) * (slow ? 980 : 820));
     }
 
     /* the touch path has no chase to fold into, so it lands on its own glide,
