@@ -3,6 +3,11 @@
 
   var ACCENT = "221,57,102";
 
+  /* The strips scroll sideways and the page scrolls down, and one trackpad gesture is
+     rarely purely one or the other. This records when a sideways gesture was last
+     served so the vertical pager can stand aside while a strip is being explored. */
+  var lastSideways = 0;
+
   /* ---------- portfolio grid ---------- */
   function buildGrid() {
     var grid = document.getElementById("work-grid");
@@ -540,17 +545,25 @@
     var GESTURE_GAP = 140;  /* ms of quiet that separates one gesture from the next */
     var NOTCH = 45;         /* px in one event: only a wheel click arrives this way */
     var SWIPE = 115;        /* px a trackpad gesture must total before it counts */
+    var EDGE_PAUSE = 420;   /* ms a tall section keeps you once you reach its end */
 
     var gesture = 0;
     var lastWheelAt = 0;
+    var edgeAt = 0;
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
       if (document.body.classList.contains("is-menu")) return;
       if (e.ctrlKey) return;                                /* pinch zoom */
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; /* sideways gesture */
+      /* A gesture has to be clearly downward to move the page: at 1.6 to 1 a diagonal
+         swipe belongs to the strip underneath, which is what the hand was aiming at. */
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) * 1.6) return;
 
       var now = performance.now();
+      /* and for a moment after a strip has been scrubbed, nothing moves the page:
+         exploring a category should not cost you the category */
+      if (now - lastSideways < 400) { gesture = 0; return; }
+
       if (now - lastWheelAt > GESTURE_GAP) { gesture = 0; spent = false; }
       lastWheelAt = now;
 
@@ -560,8 +573,25 @@
       var down = d > 0;
 
       var i = indexNow();
-      /* inside a tall section this is the browser's job, not ours */
-      if (!atEdge(sections[i], down)) return;
+      var sec = sections[i];
+      var tall = sec.offsetHeight > vh() + 4;
+
+      if (tall && !atEdge(sec, down)) {
+        /* Reading a section taller than the screen is the browser's job. Marking the
+           gesture as used matters as much: without it, the very stroke that carries
+           you to the foot of the portfolio carries straight on into the next screen,
+           so you never get to stop and look at what you just scrolled to. */
+        spent = true;
+        edgeAt = 0;
+        return;
+      }
+
+      if (tall) {
+        if (!edgeAt) edgeAt = now;              /* just arrived at an edge */
+        if (now - edgeAt < EDGE_PAUSE) return;  /* let it rest there before leaving */
+      } else {
+        edgeAt = 0;
+      }
 
       e.preventDefault();
       if (spent || animating) return;
@@ -872,6 +902,7 @@
         else if (e.deltaMode === 2) dx *= window.innerWidth; /* pages */
         e.preventDefault();
         e.stopPropagation(); /* or the page would read shift+wheel as its own scroll */
+        lastSideways = performance.now();
         r.push -= dx * 8.5;
         if (r.push > MAX_PUSH) r.push = MAX_PUSH;
         else if (r.push < -MAX_PUSH) r.push = -MAX_PUSH;
