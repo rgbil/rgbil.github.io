@@ -74,6 +74,11 @@ img { display: block; max-width: 100%; }
   min-height: 100vh;
   min-height: 100dvh;
 }
+/* taller than the screen: a document to read, never a slide to be pulled back to */
+.screen--tall {
+  scroll-snap-align: none;
+  scroll-snap-stop: normal;
+}
 
 /* ---------- shared type ---------- */
 .label {

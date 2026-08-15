@@ -349,13 +349,28 @@
     var sections = Array.prototype.slice.call(main.children);
     if (sections.length < 2) return;
 
-    /* A phone gets the platform's own snapping back. Everything built above is wheel
-       work, and none of it runs without a wheel: on touch the page was left with free
-       momentum and a JavaScript settle, which is a poor substitute for snapping that
-       lives in the compositor, reads the fling properly and never fights the finger.
-       The pointer decides which system is in charge. */
+    /* Native mandatory snapping was tried on touch and does two things badly here.
+       A section taller than the screen has only one snap point, its top, so the
+       browser keeps pulling back and the portfolio becomes hard to read. And its
+       landing is abrupt, where every other transition on this site is a long eased
+       travel. So the page keeps its own system on every device, and the guards below
+       are what keep it from fighting a finger. */
     var coarse = window.matchMedia("(pointer: coarse)").matches;
-    if (!coarse) main.style.scrollSnapType = "none";
+    main.style.scrollSnapType = "none";
+
+    /* A section taller than the screen is a document, not a slide: it is marked so the
+       stylesheet stops offering it as a snap target. Without this the no-JS fallback,
+       and any browser that keeps mandatory snapping, drags the reader back to its top. */
+    function markTall() {
+      var h = main.clientHeight || 1;
+      sections.forEach(function (sec) {
+        sec.classList.toggle("screen--tall", sec.offsetHeight > h + 4);
+      });
+    }
+    markTall();
+    window.addEventListener("resize", markTall);
+    window.addEventListener("load", markTall);
+
 
     var animating = false;
     var raf = 0;
@@ -383,19 +398,13 @@
 
       cancelAnimationFrame(raf);
       animating = true;
-      /* native snap would correct every frame we write */
-      if (coarse) main.style.scrollSnapType = "none";
 
       var t0 = performance.now();
       raf = requestAnimationFrame(function step(now) {
         var t = Math.min(1, (now - t0) / dur);
         main.scrollTop = from + dist * ease(t);
-        if (t < 1) {
-          raf = requestAnimationFrame(step);
-        } else {
-          if (coarse) main.style.scrollSnapType = "";
-          animating = false;
-        }
+        if (t < 1) raf = requestAnimationFrame(step);
+        else animating = false;
       });
     }
 
@@ -507,7 +516,6 @@
     /* the touch path has no chase to fold into, so it lands on its own glide,
        timed to sit in the same weight class as the wheel */
     function settle() {
-      if (coarse) return; /* the browser is snapping; a second opinion only fights it */
       if (animating || touching) return;
       /* a phone hiding its address bar resizes every screen: the rest points move
          underneath us, and settling on them then reads as the page moving by itself */
@@ -516,7 +524,9 @@
       var pt = restFor(main.scrollTop, scrollV);
       if (pt === null) return;
       var d = Math.abs(pt - main.scrollTop);
-      glideY(pt, landingTime(main.scrollTop, d));
+      /* a finger has already carried most of the distance, so the landing is the
+         shorter, softer end of the same curve the wheel uses */
+      glideY(pt, landingTime(main.scrollTop, d) * (coarse ? 0.8 : 1));
     }
 
     /* a section taller than the viewport keeps its own scroll until an edge is hit */
@@ -804,12 +814,38 @@
        a phone, where it was the difference between gliding and stuttering. */
     var lean = !window.matchMedia("(pointer: coarse)").matches;
 
+    /* A phone cannot hold a track this wide. Thirteen full-height pieces repeated for
+       the loop came to twenty thousand CSS pixels, which at a phone's pixel ratio is
+       far past the size a GPU will keep as one texture: it gets cut into tiles and
+       redrawn as it moves, which is exactly what small repeated stutters look like.
+       On a narrow screen the strip therefore carries fewer distinct pieces. Since one
+       piece nearly fills the glass, the shorter loop is not something you can see. */
+    function budgetFor(nodes) {
+      if (!window.matchMedia("(pointer: coarse)").matches) return nodes;
+
+      var h = window.innerHeight || 1;
+      var budget = 3600;   /* CSS px per set; the loop repeats sooner, memory stays sane */
+      var kept = [], run = 0;
+
+      for (var i = 0; i < nodes.length; i++) {
+        var im = nodes[i].tagName === "IMG" ? nodes[i] : nodes[i].querySelector("img");
+        /* the build writes the real dimensions, so the rendered width is known before
+           anything is laid out: full height times the piece's own proportions */
+        var iw = im && parseFloat(im.getAttribute("width")) || 1;
+        var ih = im && parseFloat(im.getAttribute("height")) || 1;
+        run += h * (iw / ih);
+        kept.push(nodes[i]);
+        if (run > budget && kept.length >= 3) break;
+      }
+      return kept;
+    }
+
     var rows = strips.map(function (el, i) {
       var sec = el.closest("section");
       /* the photos are whatever the markup lists: no links, nothing to click through.
          Each source is cloned whole, so the <picture> element the build emits keeps
          its AVIF and WebP ladders instead of being flattened back to one src. */
-      var srcs = Array.prototype.map.call(el.children, function (node) {
+      var srcs = budgetFor(Array.prototype.slice.call(el.children)).map(function (node) {
         return node.outerHTML;
       });
       if (!srcs.length) return null;
