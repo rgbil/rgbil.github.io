@@ -383,6 +383,11 @@
       return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
 
+    /* easeOutCubic: fastest at the very start. What a release needs, because the
+       finger was already moving and any ease-in would stop the page dead before
+       starting it again, which is seen as a jump rather than a continuation. */
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
     function indexNow() {
       var probe = main.scrollTop + vh() * 0.5;
       for (var i = sections.length - 1; i >= 0; i--) {
@@ -391,7 +396,8 @@
       return 0;
     }
 
-    function glideY(to, dur) {
+    function glideY(to, dur, curve) {
+      var shape = curve || ease;
       var from = main.scrollTop;
       var dist = to - from;
       if (Math.abs(dist) < 2) return;
@@ -402,7 +408,7 @@
       var t0 = performance.now();
       raf = requestAnimationFrame(function step(now) {
         var t = Math.min(1, (now - t0) / dur);
-        main.scrollTop = from + dist * ease(t);
+        main.scrollTop = from + dist * shape(t);
         if (t < 1) raf = requestAnimationFrame(step);
         else animating = false;
       });
@@ -698,7 +704,21 @@
       var forward = travelled > 0;
       var go = (far || fast) && Math.abs(travelled) > 4;
 
-      glideTo(go ? fromIndex + (forward ? 1 : -1) : fromIndex);
+      var i = go ? fromIndex + (forward ? 1 : -1) : fromIndex;
+      i = Math.max(0, Math.min(sections.length - 1, i));
+      var to = sections[i].offsetTop;
+      var left = Math.abs(to - main.scrollTop);
+      if (left < 2) return;
+
+      /* The duration is chosen so the animation opens at roughly the speed the finger
+         had: for this curve the starting rate is three times distance over duration,
+         so solving for the finger's speed makes the hand-over invisible. */
+      var cap = landingTime(main.scrollTop, left) * 0.8;
+      var natural = Math.abs(flickV) > 60
+        ? Math.abs(3 * left / flickV) * 1000
+        : cap;
+
+      glideY(to, Math.max(380, Math.min(cap, natural)), easeOut);
     }
 
     main.addEventListener("touchend", release, { passive: true });
@@ -870,6 +890,7 @@
          keeps a thirteen-piece category from building forty tiles it never shows */
       return Math.max(2, Math.ceil((2 * window.innerWidth) / set) + 1);
     }
+    var coarseStrips = window.matchMedia("(pointer: coarse)").matches;
     var DRIFT = 22;      /* px/s the row moves when nothing else is happening */
     var PUSH = 0.85;     /* how hard vertical scroll velocity shoves it sideways */
     var MAX_SKEW = 3;    /* deg: the lean that sells the momentum */
@@ -931,7 +952,6 @@
         dir: i % 2 === 0 ? -1 : 1, /* alternate, so the screens are not a pattern */
         x: 0,
         half: 0,
-        seen: true,
         dragging: false,
         push: 0,   /* px/s from a throw or a sideways gesture, decaying */
         moved: 0
@@ -947,6 +967,8 @@
         r.half = tiles.length > r.count
           ? tiles[r.count].offsetLeft - tiles[0].offsetLeft
           : 0;
+        r.top = r.sec ? r.sec.offsetTop : 0;
+        r.h = r.sec ? r.sec.offsetHeight : 0;
       });
     }
     measure();
@@ -955,14 +977,15 @@
 
     if (reduce) return; /* the row stays where it is, still readable and clickable */
 
-    /* skip the work for screens that are nowhere near the viewport */
-    if (window.IntersectionObserver) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          rows.forEach(function (r) { if (r.sec === e.target) r.seen = e.isIntersecting; });
-        });
-      }, { root: scroller, rootMargin: "50% 0px" });
-      rows.forEach(function (r) { if (r.sec) io.observe(r.sec); });
+    /* Which rows are worth moving is decided from the numbers, not from an observer:
+       a track left running off screen is still composited on every frame, and these
+       are thousands of pixels wide. A desktop pre-warms the neighbour, a phone does
+       not: there, only what you are actually looking at moves. */
+    var MARGIN = coarseStrips ? 0 : 0.5;
+
+    function visible(r, y, h) {
+      var top = r.top - y;
+      return top < h * (1 + MARGIN) && top + r.h > -h * MARGIN;
     }
 
     /* ---- hand control: drag, throw, and sideways gestures ---- */
@@ -1051,8 +1074,11 @@
 
       var skew = lean ? Math.max(-MAX_SKEW, Math.min(MAX_SKEW, vel * 0.005)) : 0;
 
+      var y = scroller ? scroller.scrollTop : 0;
+      var vh = scroller ? scroller.clientHeight : window.innerHeight;
+
       rows.forEach(function (r) {
-        if (!r.seen || !r.half) return;
+        if (!r.half || !visible(r, y, vh)) return;
 
         if (r.dragging) {
           /* the pointer already moved x directly */
