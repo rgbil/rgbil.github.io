@@ -414,8 +414,12 @@
       raf = requestAnimationFrame(function step(now) {
         var t = Math.min(1, (now - t0) / dur);
         main.scrollTop = from + dist * shape(t);
-        if (t < 1) raf = requestAnimationFrame(step);
-        else animating = false;
+        if (t < 1) {
+          raf = requestAnimationFrame(step);
+        } else {
+          animating = false;
+          flush();
+        }
       });
     }
 
@@ -455,6 +459,16 @@
       var aligned = Math.abs(offset) < 8;
       if (down) return i + 1;
       return aligned ? i - 1 : i;
+    }
+
+    function flush() {
+      if (!queued) return;
+      var dir = queued;
+      queued = 0;
+      var i = indexNow();
+      if (!paged(sections[i])) return;
+      spent = true;
+      glideTo(targetFrom(i, dir > 0, main.scrollTop));
     }
 
     function glideTo(i) {
@@ -601,6 +615,8 @@
     var lastDir = 0;
     var startIdx = 0;       /* the screen the gesture began on */
     var gestureTop = 0;     /* and the scroll position it began at */
+    var queued = 0;         /* one more step, asked for while the page was travelling */
+    var qGesture = 0;
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
@@ -629,6 +645,7 @@
          which had already been spent. That is the scroll refusing to go back up. */
       if (now - lastWheelAt > GESTURE_GAP || dir !== lastDir) {
         gesture = 0;
+        qGesture = 0;
         spent = false;
         /* Taken once, at the start. Below the threshold the browser is still scrolling
            its few pixels, which can carry the position over a boundary before the
@@ -657,7 +674,23 @@
          pixels first, while the gesture was still being judged, put a small native
          jump in front of the animation, which is seen as a stutter. */
       e.preventDefault();
-      if (animating || spent) return;
+
+      var mag = Math.abs(d);
+
+      /* A hand that keeps going while the page is still travelling is asking for the
+         next screen, not for nothing. Those strokes used to be swallowed: the events
+         never paused long enough to count as a new gesture, so a long continuous
+         scroll moved exactly one screen and then ignored everything. One further step
+         is remembered and taken the moment the current travel lands. */
+      if (animating || spent) {
+        qGesture += mag;
+        if (mag >= NOTCH || qGesture >= SWIPE) {
+          queued = dir;
+          qGesture = 0;
+          if (!animating) flush();
+        }
+        return;
+      }
 
       /* Two devices, two thresholds. A mouse wheel delivers one large jolt and must
          page on that alone. A trackpad delivers a stream of small ones, where a light
@@ -668,7 +701,6 @@
          2x screen they are half what the hardware reports. Sized for the raw numbers,
          the threshold was never reached by an ordinary stroke, and since nothing else
          may scroll here either, the page simply refused to move. */
-      var mag = Math.abs(d);
       gesture += mag;
       if (mag < NOTCH && gesture < SWIPE) return;
 
