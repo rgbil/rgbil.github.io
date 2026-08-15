@@ -362,9 +362,8 @@
        stylesheet stops offering it as a snap target. Without this the no-JS fallback,
        and any browser that keeps mandatory snapping, drags the reader back to its top. */
     function markTall() {
-      var h = main.clientHeight || 1;
       sections.forEach(function (sec) {
-        sec.classList.toggle("screen--tall", sec.offsetHeight > h + 4);
+        sec.classList.toggle("screen--tall", !paged(sec));
       });
     }
     markTall();
@@ -445,15 +444,22 @@
       glideY(sections[i].offsetTop, landingTime(main.scrollTop, dist));
     }
 
+    /* Only the opening screen and the categories are stepped through. Everything from
+       the portfolio down is read: the work grid, the text about her, the contact
+       details. Those scroll like any other page and nothing ever repositions them.
+       Stated as a rule about which screens they are, not about whether they happen to
+       fit the viewport, so it holds however long the copy or the grid becomes. */
+    function paged(sec) {
+      return !!sec && (sec.id === "home" || sec.classList.contains("cat"));
+    }
+
     /* every position a screen is allowed to come to rest at */
     function restPoints() {
       var pts = [];
-      sections.forEach(function (sec) {
-        pts.push(sec.offsetTop);
-        /* a tall screen may also rest with its foot on the viewport */
-        if (sec.offsetHeight > vh() + 4) {
-          pts.push(sec.offsetTop + sec.offsetHeight - vh());
-        }
+      sections.forEach(function (sec, i) {
+        /* the screen after the last category is a valid destination to land on,
+           it is simply not one you get pulled back to afterwards */
+        if (paged(sec) || paged(sections[i - 1])) pts.push(sec.offsetTop);
       });
       return pts;
     }
@@ -491,11 +497,8 @@
          them. A section taller than the viewport is different, because stopping part
          way through it is how you read it, so there the window stays narrow and
          widens only with speed. */
-      /* A section that scrolls on its own is left alone completely: the portfolio,
-         the about text and the contact screen are read, not stepped through, and any
-         pull towards an edge while reading is an interruption. */
       var sec = sectionAt(y);
-      if (sec && sec.offsetHeight > h * 1.05) return null;
+      if (!paged(sec)) return null;
       var zone = h * 0.51;
 
       var best = null, bestD = Infinity;
@@ -602,9 +605,8 @@
 
       var i = indexNow();
       var sec = sections[i];
-      var tall = sec.offsetHeight > vh() + 4;
 
-      if (tall) {
+      if (!paged(sec)) {
         /* Ordinary scrolling, all the way through and out the other side. Paging at
            the edge meant the stroke that brought you to the foot of the portfolio
            carried straight on into the next screen; leaving it to the browser means
@@ -651,7 +653,7 @@
       if (e.touches.length > 1) { dragging = false; return; }
 
       fromIndex = indexNow();
-      if (sections[fromIndex].offsetHeight > vh() + 4) { dragging = false; return; }
+      if (!paged(sections[fromIndex])) { dragging = false; return; }
 
       dragging = true;
       axis = "";
