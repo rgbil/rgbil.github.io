@@ -420,7 +420,6 @@
         } else {
           animating = false;
           glideTarget = null;
-          flush();
         }
       });
     }
@@ -461,16 +460,6 @@
       var aligned = Math.abs(offset) < 8;
       if (down) return i + 1;
       return aligned ? i - 1 : i;
-    }
-
-    function flush() {
-      if (!queued) return;
-      var dir = queued;
-      queued = 0;
-      var i = indexNow();
-      if (!paged(sections[i])) return;
-      spent = true;
-      glideTo(targetFrom(i, dir > 0, main.scrollTop));
     }
 
     function glideTo(i) {
@@ -611,7 +600,6 @@
        hardware reports; these are sized for what actually turns up. */
     var NOTCH = 40;         /* px in one event: only a wheel click arrives this way */
     var SWIPE = 55;         /* px a trackpad gesture must total before it counts */
-    var SUSTAINED = 7;      /* px in one step: below this the pad is coasting, not driven */
 
     var gesture = 0;
     var lastWheelAt = 0;
@@ -619,9 +607,6 @@
     var startIdx = 0;       /* the screen the gesture began on */
     var gestureTop = 0;     /* and the scroll position it began at */
     var glideTarget = null; /* where a travel in progress is headed */
-    var queued = 0;         /* one more step, asked for while the page was travelling */
-    var qGesture = 0;       /* driven movement counted since the last screen was taken */
-    var prevMag = 0;        /* the previous step, to tell coasting from pushing */
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
@@ -650,8 +635,6 @@
          which had already been spent. That is the scroll refusing to go back up. */
       if (now - lastWheelAt > GESTURE_GAP || dir !== lastDir) {
         gesture = 0;
-        qGesture = 0;
-        prevMag = 0;
         spent = false;
         /* Taken once, at the start. Below the threshold the browser is still scrolling
            its few pixels, which can carry the position over a boundary before the
@@ -683,31 +666,13 @@
 
       var mag = Math.abs(d);
 
-      /* Once a stroke has been answered, what follows is either the pad coasting or a
-         hand that has not stopped. By the clock they are identical, so the test is
-         whether the movement is still being driven: momentum decays within a few
-         frames, while a hand keeps delivering full-sized steps. Only steps that are
-         still substantial count towards another screen, and they have to add up to a
-         whole gesture again. Counting everything moved two screens for one flick;
-         counting nothing left a long scroll stuck after the first. */
-      if (spent) {
-        /* Momentum only ever slows: every step it delivers is smaller than the one
-           before. A hand pushing the pad does not behave that way, it wavers. So a
-           step counts towards another screen only if it did not shrink, which coasting
-           can never satisfy for long, and pushing satisfies constantly. */
-        var driven = mag >= SUSTAINED && mag >= prevMag * 0.9;
-        prevMag = mag;
-        if (driven) {
-          qGesture += mag;
-          if (qGesture >= SWIPE) {
-            qGesture = 0;
-            if (animating) queued = dir;
-            else glideTo(targetFrom(indexNow(), down, main.scrollTop));
-          }
-        }
-        return;
-      }
-      prevMag = mag;
+      /* One stroke moves one screen. Nothing after it counts, whatever it looks
+         like. Trying to tell a hand that keeps pushing from a pad that is merely
+         coasting cost several attempts: by size, by whether the steps were still
+         growing, and every rule was satisfied by some pad's momentum, which then moved
+         two screens for one flick. A pause, or a change of direction, is the only
+         signal that cannot be faked, so that is the only one used. */
+      if (spent) return;
 
       /* Two devices, two thresholds. A mouse wheel delivers one large jolt and must
          page on that alone. A trackpad delivers a stream of small ones, where a light
@@ -725,11 +690,7 @@
       if (mag < NOTCH && gesture < SWIPE) return;
 
       spent = true;
-
-      /* a new stroke that arrives while the page is still travelling waits its turn
-         rather than being lost, which is what made a long scroll stop after one */
-      if (animating) queued = dir;
-      else glideTo(targetFrom(i, down, gestureTop));
+      glideTo(targetFrom(i, down, gestureTop));
     }, { passive: false });
 
     /* ---- the finger pages too ----
@@ -1214,11 +1175,12 @@
   function startFx() {
     var c = document.getElementById("fx");
     if (!c || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    /* it reacts to a pointer, and a touch screen has none: on a phone this was seventy
-       particles and a full-screen gradient redrawn every frame for no visible reason */
-    if (window.matchMedia("(pointer: coarse)").matches) { c.style.display = "none"; return; }
+    /* A phone draws the same field at a fraction of the cost: fewer points, and no
+       oversampling for a screen whose pixels are already too small to show it. The
+       glow follows a finger the same way it follows a cursor. */
+    var lean = window.matchMedia("(pointer: coarse)").matches;
     var ctx = c.getContext("2d");
-    var w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, lean ? 1.5 : 2);
 
     function resize() {
       w = c.clientWidth; h = c.clientHeight;
@@ -1229,7 +1191,8 @@
     window.addEventListener("resize", resize);
 
     var dots = [];
-    for (var i = 0; i < 70; i++) {
+    var count = lean ? 32 : 70;
+    for (var i = 0; i < count; i++) {
       dots.push({
         x: Math.random(), y: Math.random(),
         vx: (Math.random() - 0.5) * 0.00018,
@@ -1241,6 +1204,11 @@
     var p = { x: -999, y: -999 }, m = { x: -999, y: -999 }, R = 190;
     window.addEventListener("pointermove", function (e) {
       m.x = e.clientX; m.y = e.clientY;
+    }, { passive: true });
+    /* a finger dragging the page moves the glow with it */
+    window.addEventListener("touchmove", function (e) {
+      if (!e.touches.length) return;
+      m.x = e.touches[0].clientX; m.y = e.touches[0].clientY;
     }, { passive: true });
 
     (function tick() {
