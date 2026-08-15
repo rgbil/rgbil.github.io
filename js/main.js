@@ -464,6 +464,18 @@
       return best;
     }
 
+    /* Leaving the hero is also the logo's flight, and the mark is tied to the scroll
+       position itself: however fast the page moves, that is how fast it flies. So the
+       landing that ends that screen is given roughly twice the time of the others,
+       which lets the flight play out instead of being compressed into the snap. */
+    function onHero(y) { return y < vh() * 1.02; }
+
+    function landingTime(y, d) {
+      var slow = onHero(y);
+      return Math.min(slow ? 1600 : 880,
+                      (slow ? 820 : 400) + (d / vh()) * (slow ? 980 : 620));
+    }
+
     /* the touch path has no chase to fold into, so it lands on its own glide,
        timed to sit in the same weight class as the wheel */
     function settle() {
@@ -475,7 +487,7 @@
       var pt = restFor(main.scrollTop, scrollV);
       if (pt === null) return;
       var d = Math.abs(pt - main.scrollTop);
-      glideY(pt, Math.min(880, 400 + (d / vh()) * 620));
+      glideY(pt, landingTime(main.scrollTop, d));
     }
 
     /* a section taller than the viewport keeps its own scroll until an edge is hit */
@@ -567,7 +579,8 @@
           aimed = true;
         }
 
-        var grip = aimed ? AIM_GRIP : GRIP;
+        /* same reasoning as landingTime: a softer pull while the mark is still flying */
+        var grip = aimed ? (onHero(current) ? AIM_GRIP * 0.5 : AIM_GRIP) : GRIP;
         var step = (target - current) * (1 - Math.pow(1 - grip, dt * 60));
         var limit = vh() * TOP_SPEED * dt;
         if (step > limit) step = limit; else if (step < -limit) step = -limit;
