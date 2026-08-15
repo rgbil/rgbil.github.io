@@ -652,24 +652,26 @@
         return;
       }
 
-      /* Once we have taken the gesture, the browser must not also act on it. */
-      if (animating || spent) { e.preventDefault(); return; }
+      /* On a screen that pages, the browser never scrolls: every stroke is either
+         answered by one clean travel or by nothing at all. Letting it move a few
+         pixels first, while the gesture was still being judged, put a small native
+         jump in front of the animation, which is seen as a stutter. */
+      e.preventDefault();
+      if (animating || spent) return;
 
       /* Two devices, two thresholds. A mouse wheel delivers one large jolt and must
          page on that alone. A trackpad delivers a stream of small ones, where a light
          brush against the pad can add up to a jolt's worth without being a gesture at
          all, so it has to travel further before it counts.
 
-         Nothing is cancelled until one of them is met. Cancelling first and deciding
-         afterwards meant a stroke that never reached the threshold was swallowed and
-         acted on by nobody: the page simply refused to move, which is exactly what a
-         stuck scroll is. Below the threshold the browser scrolls its few pixels, and
-         the landing tidies up after. */
+         The figures matter more than they look: deltas arrive in CSS pixels, so on a
+         2x screen they are half what the hardware reports. Sized for the raw numbers,
+         the threshold was never reached by an ordinary stroke, and since nothing else
+         may scroll here either, the page simply refused to move. */
       var mag = Math.abs(d);
       gesture += mag;
       if (mag < NOTCH && gesture < SWIPE) return;
 
-      e.preventDefault();
       spent = true;
       glideTo(targetFrom(i, down, gestureTop));
     }, { passive: false });
