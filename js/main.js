@@ -610,7 +610,8 @@
     /* Deltas arrive in CSS pixels, so on a 2x screen they are half the raw figure the
        hardware reports; these are sized for what actually turns up. */
     var NOTCH = 40;         /* px in one event: only a wheel click arrives this way */
-    var SWIPE = 80;         /* px a trackpad gesture must total before it counts */
+    var SWIPE = 55;         /* px a trackpad gesture must total before it counts */
+    var SUSTAINED = 7;      /* px in one step: below this the pad is coasting, not driven */
 
     var gesture = 0;
     var lastWheelAt = 0;
@@ -619,7 +620,7 @@
     var gestureTop = 0;     /* and the scroll position it began at */
     var glideTarget = null; /* where a travel in progress is headed */
     var queued = 0;         /* one more step, asked for while the page was travelling */
-    var qGesture = 0;
+    var qGesture = 0;       /* driven movement counted since the last screen was taken */
     var spent = false;      /* this gesture has already moved a screen */
 
     main.addEventListener("wheel", function (e) {
@@ -680,17 +681,21 @@
 
       var mag = Math.abs(d);
 
-      /* A hand that keeps going while the page is still travelling is asking for the
-         next screen, not for nothing. Those strokes used to be swallowed: the events
-         never paused long enough to count as a new gesture, so a long continuous
-         scroll moved exactly one screen and then ignored everything. One further step
-         is remembered and taken the moment the current travel lands. */
-      if (animating || spent) {
-        qGesture += mag;
-        if (mag >= NOTCH || qGesture >= SWIPE) {
-          queued = dir;
-          qGesture = 0;
-          if (!animating) flush();
+      /* Once a stroke has been answered, what follows is either the pad coasting or a
+         hand that has not stopped. By the clock they are identical, so the test is
+         whether the movement is still being driven: momentum decays within a few
+         frames, while a hand keeps delivering full-sized steps. Only steps that are
+         still substantial count towards another screen, and they have to add up to a
+         whole gesture again. Counting everything moved two screens for one flick;
+         counting nothing left a long scroll stuck after the first. */
+      if (spent) {
+        if (mag >= SUSTAINED) {
+          qGesture += mag;
+          if (qGesture >= SWIPE) {
+            qGesture = 0;
+            if (animating) queued = dir;
+            else glideTo(targetFrom(indexNow(), down, main.scrollTop));
+          }
         }
         return;
       }
@@ -703,12 +708,19 @@
          The figures matter more than they look: deltas arrive in CSS pixels, so on a
          2x screen they are half what the hardware reports. Sized for the raw numbers,
          the threshold was never reached by an ordinary stroke, and since nothing else
-         may scroll here either, the page simply refused to move. */
+         may scroll here either, the page simply refused to move. Sized too close to
+         one, a gentle flick lands either side of it and the page answers only
+         sometimes, which is worse. Measured strokes come to roughly 70 to 90, so this
+         sits clear below them and still well above an accidental brush. */
       gesture += mag;
       if (mag < NOTCH && gesture < SWIPE) return;
 
       spent = true;
-      glideTo(targetFrom(i, down, gestureTop));
+
+      /* a new stroke that arrives while the page is still travelling waits its turn
+         rather than being lost, which is what made a long scroll stop after one */
+      if (animating) queued = dir;
+      else glideTo(targetFrom(i, down, gestureTop));
     }, { passive: false });
 
     /* ---- the finger pages too ----
